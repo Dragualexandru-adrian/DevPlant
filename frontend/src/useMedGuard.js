@@ -101,6 +101,14 @@ export function useMedGuard() {
     [refresh],
   );
 
+  const correctStock = useCallback(
+    async (medId, stock) => {
+      await api.updateMed(medId, { stock });
+      await refresh();
+    },
+    [refresh],
+  );
+
   const addMed = useCallback(
     async (m) => {
       const markerId = `MED-${Date.now()}`;
@@ -122,5 +130,5 @@ export function useMedGuard() {
     [refresh],
   );
 
-  return { meds, doses, events, loading, error, confirmDose, addMed };
+  return { meds, doses, events, loading, error, confirmDose, addMed, correctStock };
 }

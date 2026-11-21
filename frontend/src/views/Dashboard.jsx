@@ -3,7 +3,7 @@ import { Icon, Badge, Card, btnPrimary } from '../ui.jsx';
 const pill = (n) => `${n} ${n === 1 ? 'pastilă' : 'pastile'}`;
 const LOW = 3;
 
-export default function Dashboard({ meds, doses, events, onConfirm }) {
+export default function Dashboard({ meds, doses, events, onConfirm, onCorrectStock }) {
   const med = (id) => meds.find((m) => m.id === id);
   const label = (m) => `${m.name} ${m.strength}`;
   const done = doses.filter((d) => d.status === 'confirmed').length;
@@ -124,14 +124,18 @@ export default function Dashboard({ meds, doses, events, onConfirm }) {
           <Card className="p-6 flex flex-col gap-4" aria-labelledby="stock-heading">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="stock-heading" className="font-title text-title-lg">Stoc medicamente</h2>
-              <button type="button" className="px-3 py-1.5 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-md hover:bg-surface-container-highest transition-colors duration-state-change">
-                Corectează stoc
-              </button>
             </div>
             <div className="flex flex-col divide-y divide-outline-variant/25">
               {meds.map((m) => {
                 const isLow = m.stock <= LOW;
                 const days = Math.floor(m.stock / (m.perDose * m.times.length));
+                const correct = () => {
+                  const next = window.prompt(`Stoc nou pentru ${label(m)}:`, m.stock);
+                  if (next === null) return;
+                  const value = Number(next);
+                  if (!Number.isFinite(value) || value < 0) return;
+                  onCorrectStock(m.id, Math.round(value));
+                };
                 return (
                   <div key={m.id} className="py-3 flex items-center justify-between gap-3">
                     <div>
@@ -140,7 +144,16 @@ export default function Dashboard({ meds, doses, events, onConfirm }) {
                         {isLow ? 'Reaprovizionare recomandată' : `Suficient pentru ${days} zile`}
                       </p>
                     </div>
-                    <span className={`font-mono text-mono-md tabular-nums ${isLow ? 'text-warning' : ''}`}>{pill(m.stock)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-mono text-mono-md tabular-nums ${isLow ? 'text-warning' : ''}`}>{pill(m.stock)}</span>
+                      <button
+                        type="button"
+                        onClick={correct}
+                        className="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-sm hover:bg-surface-container-highest transition-colors duration-state-change"
+                      >
+                        Corectează stoc
+                      </button>
+                    </div>
                   </div>
                 );
               })}

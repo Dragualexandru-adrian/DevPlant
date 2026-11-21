@@ -68,6 +68,7 @@ export async function ensureDemoSession() {
 
 export const listMeds = () => request('/meds');
 export const createMed = (med) => request('/meds', { method: 'POST', body: med });
+export const updateMed = (medId, patch) => request(`/meds/${medId}`, { method: 'PUT', body: patch });
 
 export const listSchedules = (medicationId) =>
   request(medicationId ? `/schedules?medication_id=${medicationId}` : '/schedules');

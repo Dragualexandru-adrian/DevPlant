@@ -33,7 +33,7 @@ function AuthedApp({ onLogout }) {
   const [view, setView] = useState('panou');
   const [active, setActive] = useState('panou');
   const [user, setUser] = useState(null);
-  const { meds, doses, events, loading, error, confirmDose, addMed } = useMedGuard();
+  const { meds, doses, events, loading, error, confirmDose, addMed, correctStock } = useMedGuard();
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {});
@@ -141,7 +141,7 @@ function AuthedApp({ onLogout }) {
           ) : loading ? (
             <p className="font-body text-body-md text-on-surface-variant">Se încarcă datele…</p>
           ) : view === 'panou' ? (
-            <Dashboard meds={meds} doses={doses} events={events} onConfirm={confirmDose} />
+            <Dashboard meds={meds} doses={doses} events={events} onConfirm={confirmDose} onCorrectStock={correctStock} />
           ) : view === 'istoric' ? (
             <History meds={meds} events={events} />
           ) : (
