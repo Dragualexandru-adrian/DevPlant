@@ -12,7 +12,7 @@ const BADGES = {
   confirmed: ['bg-success-container text-on-success-container', 'check_circle', 'Administrare confirmată'],
   accessed: ['bg-warning-container text-on-warning-container', 'sensors', 'Flacon accesat'],
   scheduled: ['bg-surface-container text-on-surface-variant', 'schedule', 'Programat'],
-  alert: ['bg-error text-on-error', 'notifications_active', 'Alertă Telegram'],
+  alert: ['bg-error text-on-error', 'notifications_active', 'Notificare trimisă'],
 };
 
 export const Badge = ({ status }) => {
@@ -32,4 +32,4 @@ export const Card = ({ className = '', children, ...p }) => (
 );
 
 export const btnPrimary =
-  'inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-primary text-on-primary font-label text-label-lg transition-colors duration-state-change hover:bg-on-primary-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-container-high disabled:text-outline disabled:cursor-not-allowed';
+  'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-primary text-on-primary font-label text-title-md transition-colors duration-state-change hover:bg-on-primary-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-container-high disabled:text-outline disabled:cursor-not-allowed';

@@ -17,7 +17,7 @@ export default function Scan({ onSave, onCancel }) {
   const imgRef = useRef(null);
   const [src, setSrc] = useState('');
   const [state, setState] = useState({ kind: 'idle' }); // idle | reading | done | error
-  const [f, setF] = useState({ name: '', strength: '', perDose: 1, times: '08:00', stock: 30, days: DAYS });
+  const [f, setF] = useState({ name: '', strength: '', perDose: 1, times: '08:00', stock: 30, days: DAYS, endDate: '' });
 
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
 
@@ -46,7 +46,15 @@ export default function Scan({ onSave, onCancel }) {
   const submit = (e) => {
     e.preventDefault();
     if (!valid) return;
-    onSave({ name: f.name.trim(), strength: f.strength.trim(), perDose: Number(f.perDose), stock: Number(f.stock), times, days: f.days });
+    onSave({
+      name: f.name.trim(),
+      strength: f.strength.trim(),
+      perDose: Number(f.perDose),
+      stock: Number(f.stock),
+      times,
+      days: f.days,
+      endDate: f.endDate || null,
+    });
   };
 
   return (
@@ -77,7 +85,7 @@ export default function Scan({ onSave, onCancel }) {
           )}
           {state.kind === 'error' && (
             <p className="font-body text-body-sm text-warning">
-              {state.noModel ? 'Modelul OCR nu este încărcat (public/models/ocr/). Completați datele manual.' : 'Citirea a eșuat. Încercați o poză mai clară sau completați manual.'}
+              {state.noModel ? 'Citirea automată nu este disponibilă acum. Completați datele manual.' : 'Citirea a eșuat. Încercați o poză mai clară sau completați manual.'}
             </p>
           )}
         </div>
@@ -110,6 +118,9 @@ export default function Scan({ onSave, onCancel }) {
               })}
             </div>
           </fieldset>
+          <Field label="Până la data (opțional)" hint="Lasă necompletat pentru tratament fără dată de final">
+            <input className={input} type="date" value={f.endDate} onChange={(e) => set('endDate', e.target.value)} />
+          </Field>
           <div className="flex flex-wrap justify-end gap-3 pt-2">
             <button type="button" onClick={onCancel} className="px-5 py-2.5 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-lg hover:bg-surface-container-highest transition-colors duration-state-change">Anulează</button>
             <button type="submit" className={btnPrimary} disabled={!valid}>

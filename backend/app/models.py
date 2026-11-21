@@ -28,6 +28,7 @@ class Schedule(SQLModel, table=True):
     time: str  # "HH:MM", 24h
     days_of_week: str  # csv, e.g. "mon,tue,wed,thu,fri,sat,sun"
     window_minutes: int = 3
+    end_date: Optional[str] = None  # "YYYY-MM-DD"; None = no end date
 
 
 class Event(SQLModel, table=True):
