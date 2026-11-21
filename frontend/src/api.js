@@ -1,5 +1,6 @@
 // Client FastAPI. Vezi backend/app/routers/*.py pentru formele exacte ale cererilor.
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Implicit: același host de pe care e servită pagina (merge și de pe telefon, prin IP-ul laptopului).
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 const TOKEN_KEY = 'medguard_token';
 
 // Un singur cont demo pentru hackathon (CLAUDE.md: MVP = un cont demo).
@@ -86,6 +87,10 @@ export const confirmDose = (medicationId) =>
 // Lista ANM de medicamente autorizate (backend/app/routers/catalog.py). Date publice, fără autentificare.
 export const searchCatalog = (q, limit = 8) =>
   request(`/catalog/search?${new URLSearchParams({ q, limit: String(limit) })}`, { auth: false });
+
+// Textul citit pe telefon (cel mai mare primul) -> cele mai bune potriviri din lista ANM.
+export const matchCatalog = (lines, limit = 5) =>
+  request('/catalog/match', { method: 'POST', body: { lines, limit }, auth: false });
 
 // Rezumat AI din prospectul oficial: mod de utilizare, ore între doze, reacții adverse. Prima cerere durează câteva secunde.
 export const getGuidance = (catalogId) => request(`/catalog/${catalogId}/guidance`, { auth: false });

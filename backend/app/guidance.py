@@ -8,9 +8,10 @@ Results are cached per leaflet URL, so each leaflet is summarised once.
 import json
 
 import httpx
-from sqlmodel import Session, select
+from pymongo.database import Database
 
 from app import config
+from app import db as store
 from app.leaflet import load_leaflet_sections
 from app.models import DrugCatalog, DrugGuidance
 
@@ -115,19 +116,20 @@ def summarize(entry: DrugCatalog, sections: dict[str, str]) -> dict:
         raise GuidanceError(f"Răspuns invalid de la modelul AI: {exc}") from exc
 
 
-def get_guidance(session: Session, entry: DrugCatalog) -> dict:
+def get_guidance(db: Database, entry: DrugCatalog) -> dict:
     """Summary for a catalog entry, from cache or freshly generated. Raises LeafletError / GuidanceError."""
     if not entry.leaflet_url:
         raise GuidanceError("Medicamentul nu are link către prospect în catalog.")
 
-    cached = session.exec(select(DrugGuidance).where(DrugGuidance.leaflet_url == entry.leaflet_url)).first()
+    cached = store.find_one(db, DrugGuidance, {"leaflet_url": entry.leaflet_url})
     if cached:
         summary, model = json.loads(cached.summary_json), cached.model
     else:
+        if not config.GROQ_API_KEY:  # fail fast: no point downloading the PDF without a summariser
+            raise GuidanceError("GROQ_API_KEY lipsește din backend/.env.")
         sections = load_leaflet_sections(entry.leaflet_url)
         summary, model = summarize(entry, sections), config.GROQ_MODEL
-        session.add(DrugGuidance(leaflet_url=entry.leaflet_url, summary_json=json.dumps(summary, ensure_ascii=False), model=model))
-        session.commit()
+        store.insert(db, DrugGuidance(leaflet_url=entry.leaflet_url, summary_json=json.dumps(summary, ensure_ascii=False), model=model))
 
     return {
         **summary,

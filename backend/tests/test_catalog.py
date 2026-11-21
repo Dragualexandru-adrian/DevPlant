@@ -1,7 +1,9 @@
+from contextlib import nullcontext
+
+from app import db as store
 from pathlib import Path
 
 import pytest
-from sqlmodel import Session
 
 from app.catalog import import_csv, match_ocr_lines, normalize, read_csv_rows, search
 
@@ -29,10 +31,10 @@ def csv_file(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def imported(engine, csv_file):
-    with Session(engine) as session:
+def imported(db, csv_file):
+    with nullcontext(db) as session:
         import_csv(session, csv_file)
-    return engine
+    return db
 
 
 def test_normalize_strips_diacritics_and_punctuation():
@@ -55,15 +57,15 @@ def test_read_csv_rejects_wrong_columns(tmp_path):
         read_csv_rows(path)
 
 
-def test_import_replaces_existing_catalog(engine, csv_file):
-    with Session(engine) as session:
+def test_import_replaces_existing_catalog(db, csv_file):
+    with nullcontext(db) as session:
         assert import_csv(session, csv_file) == 4
         assert import_csv(session, csv_file) == 4
         assert len(search(session, "paracetamol")) == 1
 
 
 def test_search_by_name_prefix_typo_and_dci(imported):
-    with Session(imported) as session:
+    with nullcontext(imported) as session:
         assert search(session, "parac")[0][0].name == "PARACETAMOL 500 mg"
         assert search(session, "nurofne")[0][0].name == "NUROFEN 200 mg"
         assert search(session, "ibuprofen")[0][0].name == "NUROFEN 200 mg"
@@ -75,19 +77,19 @@ def test_search_by_name_prefix_typo_and_dci(imported):
 
 def test_match_ocr_lines_ignores_noise_lines(imported):
     lines = ["firma srl", "nurofen", "200 mg", "12 drajeuri", "lot 4421"]
-    with Session(imported) as session:
+    with nullcontext(imported) as session:
         matches = match_ocr_lines(session, lines)
     assert matches[0][0].name == "NUROFEN 200 mg"
     assert matches[0][1] >= 90
 
 
 def test_match_ocr_lines_with_only_numbers_matches_nothing(imported):
-    with Session(imported) as session:
+    with nullcontext(imported) as session:
         assert match_ocr_lines(session, ["500 mg", "20", "x"]) == []
 
 
-def test_search_endpoint(client, engine, csv_file):
-    with Session(engine) as session:
+def test_search_endpoint(client, db, csv_file):
+    with nullcontext(db) as session:
         import_csv(session, csv_file)
     resp = client.get("/catalog/search", params={"q": "aspenter"})
     assert resp.status_code == 200
@@ -101,9 +103,18 @@ def test_search_endpoint_validates_query(client):
     assert client.get("/catalog/search", params={"q": "a"}).status_code == 422
 
 
-def test_get_entry_and_404(client, engine, csv_file):
-    with Session(engine) as session:
+def test_get_entry_and_404(client, db, csv_file):
+    with nullcontext(db) as session:
         import_csv(session, csv_file)
     entry_id = client.get("/catalog/search", params={"q": "nurofen"}).json()[0]["entry"]["id"]
     assert client.get(f"/catalog/{entry_id}").json()["dci"] == "IBUPROFENUM"
     assert client.get("/catalog/99999").status_code == 404
+
+
+def test_match_endpoint_uses_all_lines(client, db, csv_file):
+    with nullcontext(db) as session:
+        import_csv(session, csv_file)
+    resp = client.post("/catalog/match", json={"lines": ["Reckitt", "nurofen", "200 mg", ""]})
+    assert resp.status_code == 200
+    assert resp.json()[0]["entry"]["name"] == "NUROFEN 200 mg"
+    assert client.post("/catalog/match", json={"lines": []}).json() == []

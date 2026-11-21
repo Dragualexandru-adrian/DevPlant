@@ -1,83 +1,108 @@
-// OCR cu TensorFlow.js. TF.js nu include un model OCR: pune un model de recunoaștere
-// (CRNN convertit cu tensorflowjs_converter) în public/models/ocr/ :
-//   model.json (+ fișierele .bin) și charset.txt (un caracter pe linie, indexul 0 = "blank" CTC)
-// Presupunere: intrare [1, 32, W, 1] (grayscale 0..1), ieșire [1, T, C]. Ajustează dacă modelul tău diferă.
-import { scanLabel, searchCatalog } from '../api.js';
+// Citirea cutiei direct pe telefon/în browser, cu Tesseract.js (fără server, fără model propriu).
+// Datele de limbă (română) se descarcă o singură dată de pe CDN și rămân în cache-ul browserului.
+//
+// Numele comercial e aproape mereu textul cel mai mare de pe cutie, așa că propunem
+// rândurile ordonate după înălțimea literelor; utilizatorul confirmă sau corectează.
+import { createWorker, PSM } from 'tesseract.js';
 
-const MODEL_URL = '/models/ocr/model.json';
-const CHARSET_URL = '/models/ocr/charset.txt';
+const MAX_SIDE = 2000; // pozele de telefon au 3-4k px: mai mari doar încetinesc
+let workerPromise = null;
+let onProgress = null;
 
-let loading;
-async function load() {
-  const tf = await import('@tensorflow/tfjs');
-  const [model, txt] = await Promise.all([
-    tf.loadGraphModel(MODEL_URL),
-    fetch(CHARSET_URL).then((r) => { if (!r.ok) throw new Error('charset'); return r.text(); }),
-  ]);
-  return { tf, model, charset: txt.split('\n') };
-}
-
-export async function recognizeText(img) {
-  loading ||= load();
-  let ctx;
-  try { ctx = await loading; } catch { loading = null; throw new Error('NO_MODEL'); }
-  const { tf, model, charset } = ctx;
-
-  const input = tf.tidy(() => {
-    const gray = tf.browser.fromPixels(img).mean(2, true);          // grayscale
-    const w = Math.max(32, Math.round((gray.shape[1] / gray.shape[0]) * 32));
-    const x = tf.image.resizeBilinear(gray, [32, w]).div(255);
-    const min = x.min(), max = x.max();
-    return x.sub(min).div(max.sub(min).add(1e-6)).expandDims(0);     // contrast maxim
+function getWorker() {
+  workerPromise ||= createWorker('ron', 1, {
+    logger: (m) => {
+      if (onProgress && m.status === 'recognizing text') onProgress(m.progress);
+    },
+  }).then(async (w) => {
+    // Textul de pe ambalaje e împrăștiat (nume, concentrație, sigle): mod „sparse”.
+    await w.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
+    return w;
   });
-  const out = model.predict(input);
-  const ids = Array.from(await out.argMax(-1).data());
-  tf.dispose([input, out]);
-
-  let prev = -1, text = '';
-  for (const i of ids) { if (i !== prev && i !== 0) text += charset[i] ?? ''; prev = i; }
-  return text;
+  workerPromise.catch(() => { workerPromise = null; });
+  return workerPromise;
 }
 
-// ---- Citirea etichetei: întâi serverul, apoi browserul ----
-// Serverul rulează keras-ocr (TensorFlow) și potrivește textul cu lista ANM
-// (backend/app/ocr.py). Dacă serverul nu are TensorFlow (503) sau nu răspunde,
-// încercăm modelul TF.js din browser de mai sus; fără model -> completare manuală.
-// Rezultat: { lines: string[], matches: [{ entry, score }], source: 'server' | 'browser' }
-export async function readLabel(file, img) {
-  try {
-    const { lines, matches } = await scanLabel(file);
-    return { lines, matches, source: 'server' };
-  } catch (err) {
-    // 4xx = poza în sine e problema (ex. nu e imagine); browserul n-ar face mai bine.
-    if (err.status && err.status < 500) throw err;
+// Doar micșorăm pozele mari (viteză pe telefon). Fără alb-negru/contrast propriu:
+// binarizarea internă a Tesseract a dat rezultate mai bune pe ambalaje în teste.
+function prepare(img) {
+  const scale = MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight);
+  if (scale >= 1) return img;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+const letters = (s) => (s.match(/\p{L}/gu) || []).length;
+// Capete fără litere/cifre scoase; „Î” în mijlocul cuvântului e mereu un „I” citit greșit (FARÎNGO).
+const clean = (s) => s.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').replace(/(?<=\p{L})Î/gu, 'I');
+// „FARINGO HOT” -> „Faringo Hot”; „omega” -> „Omega”.
+const titleCase = (s) => {
+  const t = s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s-])\p{L}/gu, (c) => c.toUpperCase()) : s;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
+// Cuvinte generice de pe ambalaje: nu sunt niciodată numele medicamentului.
+const GENERIC = new Set(
+  'comprimate comprimat filmate capsule capsula capsulas kapseln granule plicuri plic pentru solutie soluție orala orală sirop suspensie crema cremă gel unguent picaturi picături injectabila injectabilă flacon cutie tablete tabletten film mg ml mit und für fur the and with'.split(' '),
+);
+const plain = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+function* allLines(blocks) {
+  for (const b of blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) yield l;
+}
+
+// Rânduri candidate pentru nume: cuvinte sigure, cu litere, grupate pe rând.
+// Ordine: mărimea literelor × încrederea (o literă mare citită greșit nu câștigă).
+function candidates(blocks) {
+  const out = [];
+  for (const line of allLines(blocks)) {
+    const words = (line.words || [])
+      .map((w) => ({ text: clean(w.text), conf: w.confidence, h: w.bbox.y1 - w.bbox.y0 }))
+      .filter((w) => w.conf >= 50 && letters(w.text) >= 2 && letters(w.text) >= w.text.length / 2 && !GENERIC.has(plain(w.text)));
+    if (!words.length) continue;
+    const tallest = Math.max(...words.map((w) => w.h));
+    const big = words.filter((w) => w.h >= tallest * 0.7);
+    const text = big.map((w) => w.text).join(' ');
+    const conf = big.reduce((s, w) => s + w.conf, 0) / big.length;
+    if (letters(text) >= 3) out.push({ text: titleCase(text), score: tallest * (conf / 100) });
   }
-  const text = (await recognizeText(img)).trim();
-  const name = parseMedication(text).name || text.split(/\s+/).find((w) => w.length > 3) || '';
-  const matches = name.length >= 2 ? await searchCatalog(name, 5).catch(() => []) : [];
-  return { lines: text ? [text] : [], matches, source: 'browser' };
+  const seen = new Set();
+  return out
+    .sort((a, b) => b.score - a.score)
+    .filter((c) => {
+      const k = c.text.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .slice(0, 6)
+    .map((c) => c.text);
 }
 
-// ---- Extragere nume + concentrație din text ----
-const KNOWN = ['Metformin', 'Amlodipină', 'Atorvastatină', 'Paracetamol', 'Ibuprofen', 'Aspirină', 'Omeprazol', 'Losartan', 'Bisoprolol'];
-const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-function lev(a, b) {
-  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
-  for (let j = 1; j <= b.length; j++) d[0][j] = j;
-  for (let i = 1; i <= a.length; i++)
-    for (let j = 1; j <= b.length; j++)
-      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-  return d[a.length][b.length];
-}
-
-export function parseMedication(text) {
-  const s = text.match(/(\d+(?:[.,]\d+)?)\s?(mg|g|mcg|µg|ml)\b/i);
-  let name = '', best = 0;
-  for (const w of norm(text).split(/[^a-z]+/).filter((w) => w.length > 3))
-    for (const k of KNOWN) {
-      const score = 1 - lev(norm(k), w) / Math.max(k.length, w.length);
-      if (score > best) { best = score; name = k; }
-    }
-  return { name: best >= 0.7 ? name : '', strength: s ? `${s[1]} ${s[2].toLowerCase()}` : '' };
+/**
+ * Citește cutia din imaginea <img> deja încărcată.
+ * @returns {Promise<{ name: string, strength: string, candidates: string[], lines: string[], text: string }>}
+ */
+export async function readBox(img, progress) {
+  onProgress = progress;
+  try {
+    const worker = await getWorker();
+    const { data } = await worker.recognize(prepare(img), {}, { text: true, blocks: true });
+    const text = data.text || '';
+    const list = candidates(data.blocks);
+    const s = text.match(/(\d+(?:[.,]\d+)?)\s?(mg|g|mcg|µg|ml|ui)\b/i);
+    const rest = text.split('\n').map((l) => l.trim()).filter((l) => letters(l) >= 3);
+    return {
+      name: list[0] || '',
+      strength: s ? `${s[1]} ${s[2].toLowerCase()}` : '',
+      candidates: list,
+      lines: [...list, ...rest], // pentru potrivirea cu lista ANM: textul cel mai mare primul
+      text,
+    };
+  } finally {
+    onProgress = null;
+  }
 }

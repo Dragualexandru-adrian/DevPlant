@@ -111,19 +111,17 @@ export function useMedGuard() {
 
   const addMed = useCallback(
     async (m) => {
-      const markerId = `MED-${Date.now()}`;
+      // marker_id = codul ArUco de pe flacon (Pi trimite „MED-DEMO-<n>”); fără cod -> null.
       const medication = await api.createMed({
         name: m.name,
-        concentration: m.strength,
+        concentration: m.strength || null,
         pills_per_dose: m.perDose,
         stock: m.stock,
-        marker_id: markerId,
+        marker_id: m.markerId ?? null,
       });
-      const daysOfWeek = m.days.map((d) => DAY_CODES[d]).join(',');
+      const daysOfWeek = Object.values(DAY_CODES).join(',');
       await Promise.all(
-        m.times.map((time) =>
-          api.createSchedule({ medication_id: medication.id, time, days_of_week: daysOfWeek, end_date: m.endDate || null }),
-        ),
+        m.times.map((time) => api.createSchedule({ medication_id: medication.id, time, days_of_week: daysOfWeek })),
       );
       await refresh();
     },

@@ -22,7 +22,7 @@ export default function History({ meds, events }) {
               const m = med(e.medId);
               return (
                 <div key={e.id} className="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                     <h3 className="font-title text-title-md">{label(m)}</h3>
                     <Badge status={e.status} />
                   </div>

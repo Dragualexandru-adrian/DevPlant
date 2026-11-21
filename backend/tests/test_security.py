@@ -1,3 +1,6 @@
+from contextlib import nullcontext
+
+from app import db as store
 import pytest
 from fastapi import HTTPException
 from jose import jwt
@@ -26,22 +29,21 @@ def test_create_access_token_contains_subject_and_expiry():
 
 def test_get_current_user_rejects_malformed_token():
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(token="not-a-valid-jwt", session=None)
+        get_current_user(token="not-a-valid-jwt", db=None)
     assert exc_info.value.status_code == 401
 
 
 def test_get_current_user_rejects_token_without_subject():
     token = jwt.encode({"exp": 9999999999}, JWT_SECRET, algorithm=JWT_ALGORITHM)
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(token=token, session=None)
+        get_current_user(token=token, db=None)
     assert exc_info.value.status_code == 401
 
 
-def test_get_current_user_rejects_unknown_subject(engine):
-    from sqlmodel import Session
-
+def test_get_current_user_rejects_unknown_subject(db):
+    
     token = create_access_token("ghost@example.com")
-    with Session(engine) as session:
+    with nullcontext(db) as session:
         with pytest.raises(HTTPException) as exc_info:
-            get_current_user(token=token, session=session)
+            get_current_user(token=token, db=session)
     assert exc_info.value.status_code == 401

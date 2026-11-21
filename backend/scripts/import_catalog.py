@@ -1,4 +1,4 @@
-"""Load the ANM authorised-medicines CSV into the drug_catalog table.
+"""Load the ANM authorised-medicines CSV into the MongoDB drugcatalog collection.
 
 Usage (from backend/, venv active):
     python -m scripts.import_catalog "D:\\medicamente_autorizate_cu_prospecte.csv"
@@ -10,10 +10,8 @@ import argparse
 import time
 from pathlib import Path
 
-from sqlmodel import Session
-
 from app.catalog import import_csv
-from app.db import engine, init_db
+from app.db import get_db, init_db
 
 
 def main() -> None:
@@ -23,10 +21,10 @@ def main() -> None:
     if not args.csv_path.is_file():
         parser.error(f"file not found: {args.csv_path}")
 
-    init_db()
+    db = get_db()
+    init_db(db)
     started = time.perf_counter()
-    with Session(engine) as session:
-        count = import_csv(session, args.csv_path)
+    count = import_csv(db, args.csv_path)
     print(f"Imported {count} catalog entries in {time.perf_counter() - started:.1f}s")
 
 

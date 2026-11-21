@@ -1,6 +1,6 @@
 # MedGuard Backend
 
-FastAPI + SQLite backend for MedGuard. See [../PLAN.md](../PLAN.md) for full project plan, [../CLAUDE.md](../CLAUDE.md) / [../AGENTS.md](../AGENTS.md) for agent conventions.
+FastAPI + MongoDB (Atlas) backend for MedGuard. See [../PLAN.md](../PLAN.md) for full project plan, [../CLAUDE.md](../CLAUDE.md) / [../AGENTS.md](../AGENTS.md) for agent conventions.
 
 ## What it does
 - **Auth** — register/login with email+password, JWT bearer tokens. Roles: `patient` / `caregiver`.
@@ -50,6 +50,7 @@ backend/
 | GET | `/events` | JWT | list own events (optional `?medication_id=`) |
 | POST | `/events/confirm` | JWT | `{medication_id}` - logs `dose_confirmed`, decrements stock |
 | GET | `/catalog/search?q=` | - | fuzzy search in the ANM drug list (trade name or DCI) |
+| POST | `/catalog/match` | - | `{lines}` text read on the phone (largest first) -> best ANM matches |
 | GET | `/catalog/{id}` | - | one catalog entry (name, DCI, form, leaflet/RCP links) |
 | GET | `/catalog/{id}/guidance` | - | AI summary of the official leaflet (see below), cached per leaflet |
 | POST | `/ocr/scan` | - | multipart `image` (box photo) -> `{lines, matches}`; 503 if TensorFlow can't load |
@@ -107,7 +108,7 @@ curl http://127.0.0.1:8000/health
 Should return `{"status":"ok"}`. Interactive API docs at `http://127.0.0.1:8000/docs`.
 
 ## Tests
-Pytest suite (unit + integration) covering auth, meds, schedules, events, security, push, and the missed-dose background logic. In-memory SQLite per test, no real DB or background task touched.
+Pytest suite (unit + integration) covering auth, meds, schedules, events, security, push, and the missed-dose background logic. In-memory MongoDB (mongomock) per test, no real DB or background task touched.
 
 ```powershell
 cd backend
@@ -118,7 +119,7 @@ pytest
 Runs with coverage by default (`pytest.ini`); HTML report at `backend/htmlcov/index.html`. Run a single file/test with `pytest tests/test_meds.py` or `pytest tests/test_meds.py::test_create_medication`.
 
 ## Notes / known limitations (MVP scope)
-- SQLite DB file (`medguard.db`) is created on startup next to wherever uvicorn runs, gitignored.
+- Data lives in MongoDB (`MONGODB_URI` / `MONGODB_DB` in `.env`; Atlas Network Access must allow this machine). Old SQLite data: `python -m scripts.migrate_sqlite_to_mongo medguard.db`. Integer ids come from a `counters` collection.
 - CORS origins come from `CORS_ORIGINS` in `.env` (comma-separated), default `http://localhost:3000`.
 - Schedule `time` is interpreted in the server's local time (naive "HH:MM"); the background loop compares against UTC-aware timestamps assuming server and schedule agree on timezone — fine for a same-machine demo, not correct across timezones.
 - Missed-dose alert state is kept in memory (not persisted) — restarting the server resets dedupe tracking for already-alerted occurrences.

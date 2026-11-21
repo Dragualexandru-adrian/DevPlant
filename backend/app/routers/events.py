@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select
+from pymongo.database import Database
 
-from app.db import get_session
+from app import db as store
+from app.db import get_db
 from app.models import Event, Medication, User
+from app.routers.meds import owned_medication
 from app.schemas import DoseConfirm, EventIn
 from app.security import get_current_user
 
@@ -10,54 +12,36 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.post("", response_model=Event)
-def report_event(payload: EventIn, session: Session = Depends(get_session)):
+def report_event(payload: EventIn, db: Database = Depends(get_db)):
     """Pi posts vial-access events here. No auth: Pi identifies the med by marker_id."""
-    med = session.exec(
-        select(Medication).where(Medication.marker_id == payload.marker_id)
-    ).first()
+    med = store.find_one(db, Medication, {"marker_id": payload.marker_id})
     if not med:
         raise HTTPException(status_code=404, detail="Unknown marker_id")
-
-    event = Event(medication_id=med.id, event_type=payload.event_type)
-    session.add(event)
-    session.commit()
-    session.refresh(event)
-    return event
+    return store.insert(db, Event(medication_id=med.id, event_type=payload.event_type))
 
 
 @router.get("", response_model=list[Event])
 def list_events(
     medication_id: int | None = Query(default=None),
-    session: Session = Depends(get_session),
+    db: Database = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    query = (
-        select(Event)
-        .join(Medication, Medication.id == Event.medication_id)
-        .where(Medication.owner_id == user.id)
-        .order_by(Event.timestamp.desc())
-    )
+    med_ids = [m["_id"] for m in db[store.coll(Medication)].find({"owner_id": user.id}, {"_id": 1})]
     if medication_id is not None:
-        query = query.where(Event.medication_id == medication_id)
-    return session.exec(query).all()
+        med_ids = [m for m in med_ids if m == medication_id]
+    return store.find(
+        db, Event, {"medication_id": {"$in": med_ids}}, sort=[("timestamp", -1), ("_id", -1)]
+    )
 
 
 @router.post("/confirm", response_model=Event)
 def confirm_dose(
     payload: DoseConfirm,
-    session: Session = Depends(get_session),
+    db: Database = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    med = session.get(Medication, payload.medication_id)
-    if not med or med.owner_id != user.id:
-        raise HTTPException(status_code=404, detail="Medication not found")
-
-    event = Event(medication_id=med.id, event_type="dose_confirmed")
-    session.add(event)
-
+    med = owned_medication(db, payload.medication_id, user)
+    event = store.insert(db, Event(medication_id=med.id, event_type="dose_confirmed"))
     med.stock = max(0, med.stock - med.pills_per_dose)
-    session.add(med)
-
-    session.commit()
-    session.refresh(event)
+    store.save(db, med)
     return event

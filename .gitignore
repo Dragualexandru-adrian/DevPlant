@@ -20,3 +20,6 @@ backend/.coverage
 backend/htmlcov/
 
 /medguard.db
+.runlogs/
+backend/*.sqlite.bak
+medicamente_autorizate_cu_prospecte.csv

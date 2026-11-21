@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-sqlmodel
+pymongo>=4.6
 python-dotenv
 python-multipart
 httpx

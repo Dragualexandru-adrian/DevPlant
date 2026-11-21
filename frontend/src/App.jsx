@@ -17,9 +17,9 @@ function initials(name) {
 }
 
 const NAV = [
-  { id: 'panou', label: 'Panou principal', icon: 'dashboard', view: 'panou' },
-  { id: 'scanare', label: 'Adaugă medicament', icon: 'document_scanner', view: 'scanare' },
-  { id: 'istoric', label: 'Istoric', icon: 'history', view: 'istoric' },
+  { id: 'panou', label: 'Panou principal', short: 'Panou', icon: 'dashboard', view: 'panou' },
+  { id: 'scanare', label: 'Adaugă medicament', short: 'Adaugă', icon: 'document_scanner', view: 'scanare' },
+  { id: 'istoric', label: 'Istoric', short: 'Istoric', icon: 'history', view: 'istoric' },
 ];
 
 export default function App() {
@@ -57,7 +57,33 @@ function AuthedApp({ onLogout }) {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      <aside className="w-full lg:w-[260px] shrink-0 bg-surface-container-lowest border-b lg:border-b-0 lg:border-r border-outline-variant/30 flex flex-col justify-between p-6 gap-8 lg:sticky lg:top-0 lg:h-screen">
+      {/* Telefon: bară de sus compactă (logo + cont + deconectare) */}
+      <div className="lg:hidden sticky top-0 z-20 bg-surface-container-lowest/95 backdrop-blur border-b border-outline-variant/30 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-md bg-primary text-on-primary flex items-center justify-center shrink-0">
+            <Icon n="medication" size={20} />
+          </div>
+          <span className="font-headline text-title-lg text-on-surface leading-none">MedGuard</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-title text-label-lg"
+            title={user?.name}
+          >
+            {userInitials}
+          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="Deconectare"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low active:bg-surface-container transition-colors duration-state-change"
+          >
+            <Icon n="logout" size={22} />
+          </button>
+        </div>
+      </div>
+
+      <aside className="hidden lg:flex w-[260px] shrink-0 bg-surface-container-lowest border-r border-outline-variant/30 flex-col justify-between p-6 gap-8 sticky top-0 h-screen">
         <div className="flex flex-col gap-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary text-on-primary flex items-center justify-center shrink-0">
@@ -68,7 +94,7 @@ function AuthedApp({ onLogout }) {
               <span className="font-label text-label-sm text-on-surface-variant block mt-1">Monitorizare inteligentă</span>
             </div>
           </div>
-          <nav aria-label="Navigare principală" className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:flex lg:flex-col lg:gap-1.5">
+          <nav aria-label="Navigare principală" className="flex flex-col gap-1.5">
             {NAV.map((item) => {
               const on = active === item.id;
               return (
@@ -77,7 +103,7 @@ function AuthedApp({ onLogout }) {
                   type="button"
                   onClick={() => go(item)}
                   aria-current={on ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-3.5 py-3.5 lg:py-2.5 rounded-md font-label text-title-md lg:text-label-lg text-left transition-colors duration-state-change min-w-0 ${
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-md font-label text-label-lg text-left transition-colors duration-state-change min-w-0 ${
                     on ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
                   }`}
                 >
@@ -88,7 +114,7 @@ function AuthedApp({ onLogout }) {
             })}
           </nav>
         </div>
-        <div className="hidden lg:flex flex-col gap-3 pt-6 border-t border-outline-variant/30">
+        <div className="flex flex-col gap-3 pt-6 border-t border-outline-variant/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-title text-title-md shrink-0">
               {userInitials}
@@ -112,9 +138,9 @@ function AuthedApp({ onLogout }) {
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="bg-surface border-b border-outline-variant/25 px-6 lg:px-8 py-5 flex flex-wrap items-center justify-between gap-4">
+        <header className="bg-surface border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-headline text-headline-md lg:text-headline-lg text-on-surface text-balance">
+            <h1 className="font-headline text-headline-sm sm:text-headline-md lg:text-headline-lg text-on-surface text-balance">
               {view === 'panou' ? `Bună ziua, ${userFirst}` : view === 'istoric' ? 'Istoric' : 'Adaugă un medicament'}
             </h1>
             <p className="font-body text-body-md text-on-surface-variant mt-0.5 first-letter:uppercase">
@@ -125,9 +151,9 @@ function AuthedApp({ onLogout }) {
                   : 'Fotografiază cutia și verifică datele citite'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden sm:flex flex-wrap items-center gap-3">
             {view === 'panou' && (
-              <button type="button" className={`${btnPrimary} w-full sm:w-auto`} onClick={() => go(NAV[1])}>
+              <button type="button" className={btnPrimary} onClick={() => go(NAV[1])}>
                 <Icon n="document_scanner" size={22} />
                 Scanează cutie
               </button>
@@ -135,7 +161,7 @@ function AuthedApp({ onLogout }) {
           </div>
         </header>
 
-        <main className="flex-1 max-w-[1320px] w-full mx-auto px-6 lg:px-8 py-8 flex flex-col gap-8">
+        <main className="flex-1 max-w-[1320px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 flex flex-col gap-6 sm:gap-8">
           {error ? (
             <p className="font-body text-body-md text-warning">Nu s-a putut contacta serverul MedGuard: {error}</p>
           ) : loading ? (
@@ -149,6 +175,34 @@ function AuthedApp({ onLogout }) {
           )}
         </main>
       </div>
+
+      {/* Telefon: navigare jos, la îndemâna degetului mare */}
+      <nav
+        aria-label="Navigare principală"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-20 bg-surface-container-lowest/95 backdrop-blur border-t border-outline-variant/30 grid grid-cols-3 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      >
+        {NAV.map((item) => {
+          const on = active === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => go(item)}
+              aria-current={on ? 'page' : undefined}
+              className="flex flex-col items-center gap-1 py-1.5 min-h-[56px] font-label text-label-md text-on-surface-variant"
+            >
+              <span
+                className={`w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-state-change ${
+                  on ? 'bg-primary-container text-on-primary-container' : ''
+                }`}
+              >
+                <Icon n={item.icon} size={24} fill={on} />
+              </span>
+              <span className={on ? 'text-on-surface font-semibold' : ''}>{item.short}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

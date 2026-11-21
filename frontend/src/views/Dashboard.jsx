@@ -16,8 +16,8 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
 
   return (
     <>
-      <section aria-label="Indicatori zilnici" className="grid grid-cols-1 md:grid-cols-3 items-stretch gap-6">
-        <Card className="h-full p-6 flex flex-col justify-between gap-3">
+      <section aria-label="Indicatori zilnici" className="grid grid-cols-1 md:grid-cols-3 items-stretch gap-3 sm:gap-6">
+        <Card className="h-full p-4 sm:p-6 flex flex-col justify-between gap-2 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-title text-title-md text-on-surface-variant">Aderență azi</h2>
             <Icon n="verified" size={22} className="text-primary" />
@@ -30,7 +30,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
           </div>
         </Card>
 
-        <Card className="h-full p-6 flex flex-col justify-between gap-3">
+        <Card className="h-full p-4 sm:p-6 flex flex-col justify-between gap-2 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-title text-title-md text-on-surface-variant">Ultima detecție cameră</h2>
             <Icon n="sensors" size={22} className="text-warning" />
@@ -45,7 +45,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
           </div>
         </Card>
 
-        <Card className="h-full p-6 flex flex-col justify-between gap-3">
+        <Card className="h-full p-4 sm:p-6 flex flex-col justify-between gap-2 sm:gap-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-title text-title-md text-on-surface-variant">Atenționare stoc</h2>
             <Icon n="inventory_2" size={22} className="text-warning" />
@@ -59,7 +59,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
         </Card>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         <section aria-labelledby="schedule-heading" className="lg:col-span-7 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="schedule-heading" className="font-headline text-headline-md">Programul de azi</h2>
@@ -76,7 +76,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
             const m = med(d.medId);
             if (d.status === 'accessed') {
               return (
-                <article key={d.id} className="bg-surface-container-lowest rounded-lg p-6 border border-warning/40 flex flex-col gap-4">
+                <article key={d.id} className="bg-surface-container-lowest rounded-lg p-4 sm:p-6 border border-warning/40 flex flex-col gap-4">
                   <header className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-1">
                       <span className="font-mono text-mono-md tabular-nums">{d.time}</span>
@@ -94,7 +94,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
                     <span className={`font-body text-body-sm font-medium ${m.stock <= LOW ? 'text-warning' : 'text-on-surface-variant'}`}>
                       Stoc curent: {pill(m.stock)} rămase
                     </span>
-                    <button type="button" className={btnPrimary} onClick={() => onConfirm(d)}>
+                    <button type="button" className={`${btnPrimary} w-full sm:w-auto min-h-[48px]`} onClick={() => onConfirm(d)}>
                       <Icon n="check" size={18} />
                       Confirmă administrarea
                     </button>
@@ -103,7 +103,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
               );
             }
             return (
-              <article key={d.id} className="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 flex flex-wrap items-center justify-between gap-4">
+              <article key={d.id} className="bg-surface-container-lowest rounded-lg p-4 sm:p-5 border border-outline-variant/30 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-4">
                   <span className="font-mono text-mono-md text-on-surface-variant tabular-nums w-12">{d.time}</span>
                   <div>
@@ -121,7 +121,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
         </section>
 
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="p-6 flex flex-col gap-4" aria-labelledby="stock-heading">
+          <Card className="p-4 sm:p-6 flex flex-col gap-4" aria-labelledby="stock-heading">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="stock-heading" className="font-title text-title-lg">Stoc medicamente</h2>
             </div>
@@ -137,7 +137,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
                   onCorrectStock(m.id, Math.round(value));
                 };
                 return (
-                  <div key={m.id} className="py-3 flex items-center justify-between gap-3">
+                  <div key={m.id} className="py-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                     <div>
                       <p className="font-body text-body-md font-semibold">{label(m)}</p>
                       <p className={`font-body text-body-sm ${isLow ? 'text-warning' : 'text-on-surface-variant'}`}>
@@ -149,7 +149,7 @@ export default function Dashboard({ meds, doses, events, onConfirm, onCorrectSto
                       <button
                         type="button"
                         onClick={correct}
-                        className="px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-sm hover:bg-surface-container-highest transition-colors duration-state-change"
+                        className="px-3 py-2 sm:px-2.5 sm:py-1 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-sm hover:bg-surface-container-highest transition-colors duration-state-change"
                       >
                         Corectează stoc
                       </button>

@@ -7,7 +7,7 @@ MedGuard — smart medication monitoring system. Full plan: [PLAN.md](PLAN.md).
 
 Stack:
 - Frontend: React + Tesseract.js — auth, OCR box scanning, dose/schedule form, dashboard
-- Backend: Python + FastAPI + SQLite — users, meds, schedules, history, Telegram notifications
+- Backend: Python + FastAPI + MongoDB Atlas — users, meds, schedules, history, Telegram notifications
 - Hardware: Raspberry Pi 4 + camera + OpenCV — ArUco marker detection on med vials, 2 LEDs, buzzer
 - Pi <-> backend: HTTP API over Wi-Fi
 
@@ -15,7 +15,7 @@ Stage: 3-hour hackathon build, MVP scope — one demo account, two medications, 
 
 ## Setup
 - Frontend: standard React app (not yet scaffolded as of this writing).
-- Backend: FastAPI + SQLite, run with `uvicorn`.
+- Backend: FastAPI + MongoDB Atlas (`MONGODB_URI` in `backend/.env`), run with `uvicorn`.
 - Hardware: Raspberry Pi 4, OpenCV, camera; ArUco marker generation/detection.
 - Secrets (Telegram bot token, etc.) in `.env`, never committed.
 
@@ -25,7 +25,7 @@ Stage: 3-hour hackathon build, MVP scope — one demo account, two medications, 
 - Keep the Pi -> backend event API small: marker/med id, event type, timestamp.
 
 ## Build order (hour by hour — see PLAN.md for detail)
-1. **Hour 1 (parallel):** React app + OCR integration + form/dashboard skeleton; Pi/camera/LED/buzzer wiring + ArUco markers + OpenCV detection; FastAPI + SQLite + APIs + dose-time logic + Telegram prep.
+1. **Hour 1 (parallel):** React app + OCR integration + form/dashboard skeleton; Pi/camera/LED/buzzer wiring + ArUco markers + OpenCV detection; FastAPI + MongoDB + APIs + dose-time logic + Telegram prep.
 2. **Hour 2 (integration):** form -> backend save; med <-> marker linking; Pi -> FastAPI event push; dashboard updates; green/red LED + buzzer wiring; dose confirmation + stock update.
 3. **Hour 3 (test + demo):** OCR test + manual correction, vial detection test, simulated dose window, alert verification, history/confirmation/low-stock test, final 20 min for fixes + pitch.
 

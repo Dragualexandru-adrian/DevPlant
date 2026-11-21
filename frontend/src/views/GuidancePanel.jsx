@@ -42,6 +42,11 @@ export default function GuidancePanel({ entry, state, onRetry }) {
         <div className="min-w-0">
           <h2 className="font-title text-title-lg">Pe scurt din prospect</h2>
           <p className="font-body text-body-sm text-on-surface-variant">{entry.name}{entry.concentration ? ` • ${entry.concentration}` : ''}</p>
+          {(entry.dci || entry.form) && (
+            <p className="font-body text-body-sm text-on-surface-variant">
+              {[entry.dci && `Substanță activă: ${entry.dci}`, entry.form].filter(Boolean).join(' • ')}
+            </p>
+          )}
         </div>
       </div>
 
@@ -49,7 +54,11 @@ export default function GuidancePanel({ entry, state, onRetry }) {
         <p className="font-body text-body-md text-on-surface-variant">Se citește prospectul oficial…</p>
       )}
 
-      {state.kind === 'error' && (
+      {state.kind === 'error' && /GROQ_API_KEY/.test(state.message) && (
+        <p className="font-body text-body-sm text-on-surface-variant">Rezumatul automat nu este configurat. Deschideți prospectul oficial de mai jos.</p>
+      )}
+
+      {state.kind === 'error' && !/GROQ_API_KEY/.test(state.message) && (
         <div className="flex flex-col gap-3">
           <p className="font-body text-body-sm text-warning">Rezumatul nu este disponibil: {state.message}</p>
           <button type="button" onClick={onRetry} className="self-start px-4 py-2 rounded-md bg-secondary-container text-on-secondary-container font-label text-label-lg hover:bg-surface-container-highest transition-colors duration-state-change">

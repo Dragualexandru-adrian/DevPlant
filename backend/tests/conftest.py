@@ -1,33 +1,24 @@
+import mongomock
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
 
-from app.db import get_session
+from app.db import get_db, init_db
 from app.main import app
 
 
-@pytest.fixture(name="engine")
-def engine_fixture():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    SQLModel.metadata.drop_all(engine)
+@pytest.fixture
+def db():
+    """Fresh in-memory MongoDB per test (mongomock), same indexes as production."""
+    database = mongomock.MongoClient(tz_aware=True)["medguard_test"]
+    init_db(database)
+    return database
 
 
 @pytest.fixture(name="client")
-def client_fixture(engine):
-    def get_session_override():
-        with Session(engine) as session:
-            yield session
-
-    app.dependency_overrides[get_session] = get_session_override
+def client_fixture(db):
+    app.dependency_overrides[get_db] = lambda: db
     # Not used as a context manager: this intentionally skips the app's
-    # startup event (init_db on the real engine + the missed-dose background
+    # startup event (init_db on the real database + the missed-dose background
     # task), keeping each test isolated and fast.
     client = TestClient(app)
     yield client

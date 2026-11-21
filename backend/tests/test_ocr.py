@@ -1,9 +1,11 @@
+from contextlib import nullcontext
+
+from app import db as store
 import io
 
 import numpy as np
 import pytest
 from PIL import Image
-from sqlmodel import Session
 
 from app import ocr
 from app.main import app
@@ -73,11 +75,10 @@ def test_load_image_rejects_garbage():
         load_image(b"not an image")
 
 
-def test_scan_returns_lines_and_catalog_matches(client, engine, use_engine):
-    with Session(engine) as session:
-        session.add(DrugCatalog(name="NUROFEN 200 mg", dci="IBUPROFENUM", leaflet_url="http://anm/PRO_2.pdf"))
-        session.add(DrugCatalog(name="ASPENTER 75 mg", dci="ACIDUM ACETYLSALICYLICUM"))
-        session.commit()
+def test_scan_returns_lines_and_catalog_matches(client, db, use_engine):
+    with nullcontext(db) as session:
+        store.insert(session, DrugCatalog(name="NUROFEN 200 mg", dci="IBUPROFENUM", leaflet_url="http://anm/PRO_2.pdf"))
+        store.insert(session, DrugCatalog(name="ASPENTER 75 mg", dci="ACIDUM ACETYLSALICYLICUM"))
     fake = use_engine(FakeEngine(["reckitt", "nurofen", "200 mg"]))
 
     resp = client.post("/ocr/scan", files={"image": ("box.png", _png(), "image/png")})

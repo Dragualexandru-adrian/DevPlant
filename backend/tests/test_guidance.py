@@ -1,8 +1,10 @@
+from contextlib import nullcontext
+
+from app import db as store
 import json
 
 import httpx
 import pytest
-from sqlmodel import Session, select
 
 from app import config, guidance
 from app.guidance import GuidanceError, _clean_summary, get_guidance, summarize
@@ -21,12 +23,10 @@ MODEL_REPLY = {
 
 
 @pytest.fixture
-def entry(engine):
-    with Session(engine) as session:
+def entry(db):
+    with nullcontext(db) as session:
         e = DrugCatalog(name="PARACETAMOL 500 mg", dci="PARACETAMOLUM", leaflet_url="http://anm/PRO_1.pdf", spc_url="http://anm/RCP_1.pdf")
-        session.add(e)
-        session.commit()
-        session.refresh(e)
+        store.insert(session, e)
         return e
 
 
@@ -102,11 +102,11 @@ def test_clean_summary_drops_bad_types_and_unknown_keys():
     assert _clean_summary({"interval_doze_ore": 0})["interval_doze_ore"] is None
 
 
-def test_get_guidance_caches_per_leaflet(engine, entry, fake_groq):
-    with Session(engine) as session:
+def test_get_guidance_caches_per_leaflet(db, entry, fake_groq):
+    with nullcontext(db) as session:
         first = get_guidance(session, entry)
         second = get_guidance(session, entry)
-        cached = session.exec(select(DrugGuidance)).all()
+        cached = store.find(session, DrugGuidance)
 
     assert len(fake_groq) == 1  # second call served from cache
     assert first == second
@@ -117,8 +117,8 @@ def test_get_guidance_caches_per_leaflet(engine, entry, fake_groq):
     assert len(cached) == 1 and json.loads(cached[0].summary_json)["doza_uzuala"] == "1-2 comprimate"
 
 
-def test_get_guidance_without_leaflet_link(engine):
-    with Session(engine) as session:
+def test_get_guidance_without_leaflet_link(db):
+    with nullcontext(db) as session:
         with pytest.raises(GuidanceError, match="link"):
             get_guidance(session, DrugCatalog(name="X"))
 
@@ -133,10 +133,22 @@ def test_guidance_endpoint_reports_leaflet_failure(client, entry, monkeypatch):
     def fail(url):
         raise LeafletError("Prospectul este scanat (imagine), fără text extractibil.")
 
+    monkeypatch.setattr(config, "GROQ_API_KEY", "k")
     monkeypatch.setattr(guidance, "load_leaflet_sections", fail)
     resp = client.get(f"/catalog/{entry.id}/guidance")
     assert resp.status_code == 502
     assert "scanat" in resp.json()["detail"]
+
+
+def test_guidance_without_key_fails_before_downloading(client, entry, monkeypatch):
+    def must_not_download(url):
+        raise AssertionError("leaflet downloaded without a Groq key")
+
+    monkeypatch.setattr(config, "GROQ_API_KEY", "")
+    monkeypatch.setattr(guidance, "load_leaflet_sections", must_not_download)
+    resp = client.get(f"/catalog/{entry.id}/guidance")
+    assert resp.status_code == 502
+    assert "GROQ_API_KEY" in resp.json()["detail"]
 
 
 def test_guidance_endpoint_404(client):

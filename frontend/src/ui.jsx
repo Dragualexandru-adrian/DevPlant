@@ -18,7 +18,7 @@ const BADGES = {
 export const Badge = ({ status }) => {
   const [cls, icon, label] = BADGES[status];
   return (
-    <span role="status" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-label-md ${cls}`}>
+    <span role="status" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-label-md whitespace-nowrap ${cls}`}>
       <Icon n={icon} size={16} />
       {label}
     </span>

@@ -5,10 +5,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlmodel import Session, select
+from pymongo.database import Database
 
 from app.config import JWT_ALGORITHM, JWT_EXPIRE_MINUTES, JWT_SECRET
-from app.db import get_session
+from app import db as store
+from app.db import get_db
 from app.models import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -31,7 +32,7 @@ def create_access_token(subject: str) -> str:
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
-    session: Session = Depends(get_session),
+    db: Database = Depends(get_db),
 ) -> User:
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,7 +47,7 @@ def get_current_user(
     except JWTError:
         raise credentials_error
 
-    user = session.exec(select(User).where(User.email == email)).first()
+    user = store.find_one(db, User, {"email": email})
     if user is None:
         raise credentials_error
     return user

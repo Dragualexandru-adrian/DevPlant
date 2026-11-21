@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
-from sqlmodel import Session
+from pymongo.database import Database
 
 from app.catalog import match_ocr_lines
-from app.db import get_session
+from app import db as store
+from app.db import get_db
 from app.ocr import OcrEngine, OcrUnavailable, get_ocr_engine, load_image
 from app.routers.catalog import CatalogMatch
 
@@ -27,7 +28,7 @@ def ocr_engine() -> OcrEngine:
 @router.post("/scan", response_model=ScanResult)
 def scan_label(
     image: UploadFile = File(...),
-    session: Session = Depends(get_session),
+    db: Database = Depends(get_db),
     engine: OcrEngine = Depends(ocr_engine),
 ):
     """Photo of a medicine box -> text lines (keras-ocr) -> best catalog matches.
@@ -43,5 +44,5 @@ def scan_label(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     lines = engine.read_lines(pixels)
-    matches = [CatalogMatch(entry=e, score=s) for e, s in match_ocr_lines(session, lines)]
+    matches = [CatalogMatch(entry=e, score=s) for e, s in match_ocr_lines(db, lines)]
     return ScanResult(lines=lines, matches=matches)

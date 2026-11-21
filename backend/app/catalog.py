@@ -13,8 +13,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rapidfuzz import fuzz, process
-from sqlalchemy import delete, func, insert
-from sqlmodel import Session, select
+from pymongo.database import Database
+
+from app import db as store
 
 from app.models import DrugCatalog
 
@@ -67,13 +68,14 @@ def read_csv_rows(path: Path) -> list[dict]:
     return rows
 
 
-def import_csv(session: Session, path: Path) -> int:
+def import_csv(db: Database, path: Path) -> int:
     """Replace the whole catalog with the CSV contents. Returns rows stored."""
     rows = read_csv_rows(path)
-    session.execute(delete(DrugCatalog))
+    coll = db[store.coll(DrugCatalog)]
+    coll.delete_many({})
     if rows:
-        session.execute(insert(DrugCatalog), rows)
-    session.commit()
+        coll.insert_many([{"_id": i, **{k: v for k, v in row.items() if v is not None}} for i, row in enumerate(rows, 1)])
+    store.set_counter(db, store.coll(DrugCatalog), len(rows))
     _index_cache.clear()
     return len(rows)
 
@@ -85,40 +87,42 @@ class _Index:
     dcis: list[str]  # normalised active substances
 
 
-# Keyed by (engine identity, row count, max id): a re-import (even from the CLI
+# Keyed by (database identity, row count, max id): a re-import (even from the CLI
 # script while the server runs) or a different test DB rebuilds it.
 _index_cache: dict[tuple, _Index] = {}
 
 
-def _get_index(session: Session) -> _Index:
-    count, max_id = session.exec(select(func.count(), func.max(DrugCatalog.id))).one()
-    key = (id(session.get_bind()), count, max_id)
+def _get_index(db: Database) -> _Index:
+    coll = db[store.coll(DrugCatalog)]
+    count = coll.count_documents({})
+    last = coll.find_one({}, {"_id": 1}, sort=[("_id", -1)])
+    key = (id(db), count, last["_id"] if last else None)
     index = _index_cache.get(key)
     if index is None:
-        rows = session.exec(select(DrugCatalog.id, DrugCatalog.name, DrugCatalog.dci).order_by(DrugCatalog.id)).all()
+        rows = list(coll.find({}, {"name": 1, "dci": 1}).sort("_id", 1))
         index = _Index(
-            ids=[r[0] for r in rows],
-            names=[normalize(r[1]) for r in rows],
-            dcis=[normalize(r[2]) for r in rows],
+            ids=[r["_id"] for r in rows],
+            names=[normalize(r.get("name")) for r in rows],
+            dcis=[normalize(r.get("dci")) for r in rows],
         )
         _index_cache.clear()
         _index_cache[key] = index
     return index
 
 
-def _fetch(session: Session, scored: list[tuple[int, float]], limit: int) -> list[tuple[DrugCatalog, float]]:
+def _fetch(db: Database, scored: list[tuple[int, float]], limit: int) -> list[tuple[DrugCatalog, float]]:
     """Turn (index position, score) pairs into catalog rows, best first."""
-    index = _get_index(session)
+    index = _get_index(db)
     scored = sorted(scored, key=lambda s: (-s[1], len(index.names[s[0]])))[:limit]
     ids = [index.ids[pos] for pos, _ in scored]
-    by_id = {e.id: e for e in session.exec(select(DrugCatalog).where(DrugCatalog.id.in_(ids))).all()}
+    by_id = {e.id: e for e in store.find(db, DrugCatalog, {"_id": {"$in": ids}})}
     return [(by_id[index.ids[pos]], round(score, 1)) for pos, score in scored if index.ids[pos] in by_id]
 
 
-def search(session: Session, query: str, limit: int = 10) -> list[tuple[DrugCatalog, float]]:
+def search(db: Database, query: str, limit: int = 10) -> list[tuple[DrugCatalog, float]]:
     """Fuzzy search by trade name or active substance (typed query)."""
     q = normalize(query)
-    index = _get_index(session)
+    index = _get_index(db)
     if not q or not index.ids:
         return []
 
@@ -131,17 +135,17 @@ def search(session: Session, query: str, limit: int = 10) -> list[tuple[DrugCata
         if name.startswith(q):
             scores[pos] = max(scores.get(pos, 0.0), 100.0)
 
-    return _fetch(session, [(pos, s) for pos, s in scores.items() if s >= MIN_SEARCH_SCORE], limit)
+    return _fetch(db, [(pos, s) for pos, s in scores.items() if s >= MIN_SEARCH_SCORE], limit)
 
 
-def match_ocr_lines(session: Session, lines: list[str], limit: int = 5) -> list[tuple[DrugCatalog, float]]:
+def match_ocr_lines(db: Database, lines: list[str], limit: int = 5) -> list[tuple[DrugCatalog, float]]:
     """Best catalog entries for the text read off a medicine box.
 
     A box carries many lines (company, "comprimate", lot no.); each catalog name is
     scored against every line and keeps its best score, so noise lines don't
     drag down the line that actually holds the name.
     """
-    index = _get_index(session)
+    index = _get_index(db)
     lines_norm = [normalize(line) for line in lines]
     lines_norm = [q for q in lines_norm if q]
     # Adjacent lines joined too: "PARACETAMOL" / "500 mg" are often split.
@@ -154,5 +158,16 @@ def match_ocr_lines(session: Session, lines: list[str], limit: int = 5) -> list[
 
     matrix = process.cdist(queries, index.names, scorer=fuzz.WRatio, workers=-1)
     best = matrix.max(axis=0)
-    scored = [(pos, float(score)) for pos, score in enumerate(best) if score >= MIN_OCR_SCORE]
-    return _fetch(session, scored, limit)
+    # Partial matching scores "FARINGO" the same against FARINGOSEPT and FARINGO HOT DRINK;
+    # a trade name whose first word was read exactly on the box is the better match.
+    # Only the first line counts: callers send the most prominent text first (the phone
+    # orders by letter size), and later lines hold generic words (PARACETAMOL, SOLUTIE...).
+    words = {w for w in lines_norm[0].split() if sum(c.isalpha() for c in w) >= 4} if lines_norm else set()
+    scored = []
+    for pos, score in enumerate(best):
+        name = index.names[pos]
+        if name and name.split(" ", 1)[0] in words:
+            score = 100.0
+        if score >= MIN_OCR_SCORE:
+            scored.append((pos, float(score)))
+    return _fetch(db, scored, limit)
