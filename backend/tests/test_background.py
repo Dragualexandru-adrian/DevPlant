@@ -30,7 +30,7 @@ def _freeze(monkeypatch, fixed: datetime) -> None:
 
 
 def _make_schedule(session, offset_minutes, window_minutes=3, days=None):
-    now = datetime.now(timezone.utc)
+    now = datetime.now().astimezone()  # schedules are in local time
     med = Medication(owner_id=1, name="Aspirin")
     store.insert(session, med)
 
@@ -110,7 +110,7 @@ async def test_schedule_not_today_produces_no_alert(bg_engine, monkeypatch):
     monkeypatch.setattr(background, "send_expo_push", fail_push)
 
     with nullcontext(bg_engine) as session:
-        now = datetime.now(timezone.utc)
+        now = datetime.now().astimezone()
         other_day = background._WEEKDAYS[(now.weekday() + 1) % 7]
         now, _med, _schedule = _make_schedule(session, offset_minutes=-10, days=other_day)
 
@@ -143,3 +143,34 @@ async def test_missed_alert_deduped_across_checks(bg_engine, monkeypatch):
         alerts = store.find(session, Event, {"event_type": "missed_alert"})
         assert len(alerts) == 1
     assert len(calls) == 1
+
+
+async def test_schedule_times_are_local_time(bg_engine, monkeypatch):
+    """Regression: "08:00" is the user's local time; the loop must not read it as UTC."""
+    async def no_push(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(background, "send_expo_push", no_push)
+    with nullcontext(bg_engine) as session:
+        _now, med, _schedule = _make_schedule(session, offset_minutes=-10)  # local HH:MM, 10 min ago
+    # The clock hands back a UTC instant, like datetime.now(timezone.utc) does in production.
+    _freeze(monkeypatch, datetime.now(timezone.utc))
+    await background._check_once()
+    with nullcontext(bg_engine) as session:
+        assert len(store.find(session, Event, {"event_type": "missed_alert", "medication_id": med.id})) == 1
+
+
+async def test_missed_alert_not_repeated_after_restart(bg_engine, monkeypatch):
+    """The dedupe set lives in memory; a restart must not raise the same alert again."""
+    async def no_push(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(background, "send_expo_push", no_push)
+    with nullcontext(bg_engine) as session:
+        now, med, _schedule = _make_schedule(session, offset_minutes=-10)
+    _freeze(monkeypatch, now)
+    await background._check_once()
+    background._alerted_occurrences.clear()  # simulate a backend restart
+    await background._check_once()
+    with nullcontext(bg_engine) as session:
+        assert len(store.find(session, Event, {"event_type": "missed_alert", "medication_id": med.id})) == 1

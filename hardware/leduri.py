@@ -5,6 +5,7 @@ import cv2
 import glob
 import os
 import time
+import traceback
 import requests
 
 # LED alb, verde, roșu — BCM
@@ -75,6 +76,11 @@ def trimite_eveniment(marker, tip):
         print(f"[MedGuard] {marker} {tip} netrimis: {e}", flush=True)
 
 
+def in_alarma(c, acum):
+    """Cutie în cadru, nescoasă, cu termenul depășit. O cutie deja luată nu are termen."""
+    return c["stare"] == "asteapta" and c["termen"] is not None and acum >= c["termen"]
+
+
 def actualizeaza_cutii(vazute, acum):
     """vazute = set de ID-uri ArUco detectate în cadrul curent."""
     for mid in vazute:
@@ -115,6 +121,10 @@ def actualizeaza_cutii(vazute, acum):
                             args=(f"{PREFIX_MARKER}{mid}", "accessed"),
                             daemon=True,
                         ).start()
+                    elif c["termen"] is None:
+                        # Era deja luată: o ridicare scurtă nu anulează doza de dinainte.
+                        c["stare"] = "luata"
+                        print(f"[ArUco] ID {mid} ridicată scurt ({int(afara)} s), rămâne luată", flush=True)
                     else:
                         c["stare"] = "asteapta"  # termenul inițial rămâne
                         c["nota"] = f"pusă înapoi după {int(afara)} s (minim {SECUNDE_MIN_SCOASA} s)"
@@ -149,8 +159,7 @@ def captura():
         with state_lock:
             actualizeaza_cutii(vazute, acum)
             stari = {mid: c["stare"] for mid, c in cutii.items()}
-            alarma = {mid for mid, c in cutii.items()
-                      if c["stare"] == "asteapta" and acum >= c["termen"]}
+            alarma = {mid for mid, c in cutii.items() if in_alarma(c, acum)}
 
         if ids is not None:
             for colt, mid in zip(colturi, ids.flatten()):
@@ -231,7 +240,7 @@ def status():
     with state_lock:
         for mid in sorted(cutii):
             c = cutii[mid]
-            alarma = c["stare"] == "asteapta" and acum >= c["termen"]
+            alarma = in_alarma(c, acum)
             if c["stare"] == "luata":
                 mesaj = f"Luată ({c['nota']}) și pusă la loc. Trimis în aplicație."
             elif c["stare"] == "scoasa":
@@ -243,7 +252,7 @@ def status():
             elif alarma:
                 mesaj = "ALARMĂ: cutia nu a fost luată la timp!"
             else:
-                secunde = max(0, int(c["termen"] - acum))
+                secunde = max(0, int((c["termen"] or acum) - acum))
                 mesaj = f"Aștept scoaterea cutiei. Timp rămas: {secunde // 60}:{secunde % 60:02d}"
             if c["stare"] == "asteapta" and c["nota"]:
                 mesaj += f" (Ultima dată: {c['nota']}, nu s-a înregistrat.)"
@@ -277,7 +286,7 @@ def controleaza_ledurile():
     while not stop_all.is_set():
         acum = time.monotonic()
         with state_lock:
-            alarmata = any(c["stare"] == "asteapta" and acum >= c["termen"] for c in cutii.values())
+            alarmata = any(in_alarma(c, acum) for c in cutii.values())
             # Verde: toate cutiile văzute au fost scoase și puse la loc.
             toate_puse = bool(cutii) and all(c["stare"] == "luata" for c in cutii.values())
 
@@ -294,9 +303,21 @@ def controleaza_ledurile():
             time.sleep(0.1)
 
 
+def ruleaza_mereu(functie):
+    """O eroare neprevăzută nu trebuie să oprească în tăcere camera sau LED-urile: o scriem și repornim."""
+    def bucla():
+        while not stop_all.is_set():
+            try:
+                functie()
+            except Exception:
+                traceback.print_exc()
+                time.sleep(1)
+    return bucla
+
+
 if __name__ == "__main__":
-    Thread(target=captura, daemon=True).start()
-    Thread(target=controleaza_ledurile, daemon=True).start()
+    Thread(target=ruleaza_mereu(captura), daemon=True).start()
+    Thread(target=ruleaza_mereu(controleaza_ledurile), daemon=True).start()
     print(f"Camera: {CAMERA_DEV}")
     print(f"Deschide: http://IP-UL-PI-ULUI:{PORT}/")
     print(f"MedGuard: {MEDGUARD_API}  marker: {PREFIX_MARKER}<ID>  alarmă după {DURATA_ALARMEI}s", flush=True)

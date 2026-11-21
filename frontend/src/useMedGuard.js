@@ -35,15 +35,29 @@ function toDoses(schedules, events) {
   const today = schedules.filter(
     (s) => s.days_of_week.split(',').includes(TODAY_CODE) && (!s.end_date || s.end_date >= TODAY_ISO),
   );
-  const latestByMed = new Map();
+  // Fiecare eveniment de azi aparține dozei programate cea mai apropiată ca oră, ca o ridicare
+  // de seară să nu schimbe starea dozei de dimineață deja confirmate.
+  const minutes = (hhmm) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const latestBySchedule = new Map();
   for (const e of events) {
-    if (!isToday(e.timestamp)) continue;
-    const prev = latestByMed.get(e.medication_id);
-    if (!prev || new Date(e.timestamp) > new Date(prev.timestamp)) latestByMed.set(e.medication_id, e);
+    if (!isToday(e.timestamp) || (e.event_type !== 'accessed' && e.event_type !== 'dose_confirmed')) continue;
+    const slots = today.filter((s) => s.medication_id === e.medication_id);
+    if (!slots.length) continue;
+    const at = minutes(hm(e.timestamp));
+    const slot = slots.reduce((best, s) => (Math.abs(minutes(s.time) - at) < Math.abs(minutes(best.time) - at) ? s : best));
+    // O doză confirmată rămâne confirmată: o ridicare ulterioară a cutiei nu o anulează.
+    const prev = latestBySchedule.get(slot.id);
+    const rank = (x) => (x.event_type === 'dose_confirmed' ? 1 : 0);
+    if (!prev || rank(e) > rank(prev) || (rank(e) === rank(prev) && new Date(e.timestamp) > new Date(prev.timestamp))) {
+      latestBySchedule.set(slot.id, e);
+    }
   }
   return today
     .map((s) => {
-      const latest = latestByMed.get(s.medication_id);
+      const latest = latestBySchedule.get(s.id);
       const status = latest?.event_type === 'dose_confirmed' ? 'confirmed' : latest?.event_type === 'accessed' ? 'accessed' : 'scheduled';
       return { id: `sch-${s.id}`, medId: s.medication_id, time: s.time, status, at: status === 'scheduled' ? undefined : hm(latest.timestamp) };
     })

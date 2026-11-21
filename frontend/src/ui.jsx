@@ -1,3 +1,5 @@
+import { useAccessibility } from './context/AccessibilityContext.jsx';
+
 export const Icon = ({ n, size = 20, fill = false, className = '' }) => (
   <span
     className={`material-symbols-outlined ${className}`}
@@ -9,18 +11,19 @@ export const Icon = ({ n, size = 20, fill = false, className = '' }) => (
 );
 
 const BADGES = {
-  confirmed: ['bg-success-container text-on-success-container', 'check_circle', 'Administrare confirmată'],
-  accessed: ['bg-warning-container text-on-warning-container', 'sensors', 'Flacon accesat'],
-  scheduled: ['bg-surface-container text-on-surface-variant', 'schedule', 'Programat'],
-  alert: ['bg-error text-on-error', 'notifications_active', 'Notificare trimisă'],
+  confirmed: ['bg-success-container text-on-success-container', 'check_circle', 'badgeConfirmed'],
+  accessed: ['bg-warning-container text-on-warning-container', 'sensors', 'badgeAccessed'],
+  scheduled: ['bg-surface-container text-on-surface-variant', 'schedule', 'badgeScheduled'],
+  alert: ['bg-error text-on-error', 'notifications_active', 'badgeAlert'],
 };
 
 export const Badge = ({ status }) => {
-  const [cls, icon, label] = BADGES[status];
+  const { t } = useAccessibility();
+  const [cls, icon, labelKey] = BADGES[status];
   return (
     <span role="status" className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-label-md whitespace-nowrap ${cls}`}>
       <Icon n={icon} size={16} />
-      {label}
+      {t(labelKey)}
     </span>
   );
 };

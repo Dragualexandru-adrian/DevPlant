@@ -6,3 +6,36 @@
   display: inline-block; width: 1em; height: 1em; line-height: 1 !important;
   box-sizing: content-box; overflow: hidden; white-space: nowrap; vertical-align: middle;
 }
+
+/* Mod text mare / vedere simplificată pentru pacient: scalează întreaga interfață
+   (text, butoane, spațiere) fără a rescrie fiecare clasă Tailwind. */
+html.a11y-large {
+  zoom: 1.3;
+}
+
+/* Paletă sigură pentru daltonism (Okabe-Ito): starea nu mai depinde doar de
+   roșu/verde — folosim albastru/portocaliu, păstrând iconița + eticheta text. */
+html.a11y-colorblind .bg-success-container {
+  background-color: #CFE3FF !important;
+}
+html.a11y-colorblind .text-on-success-container {
+  color: #042A52 !important;
+}
+html.a11y-colorblind .bg-warning-container {
+  background-color: #FFE3B3 !important;
+}
+html.a11y-colorblind .text-on-warning-container {
+  color: #3A2400 !important;
+}
+html.a11y-colorblind .border-warning\/40 {
+  border-color: rgba(230, 159, 0, 0.5) !important;
+}
+html.a11y-colorblind .text-warning {
+  color: #B35900 !important;
+}
+html.a11y-colorblind .bg-error {
+  background-color: #6A2C91 !important;
+}
+html.a11y-colorblind .text-on-error {
+  color: #FBF2FF !important;
+}

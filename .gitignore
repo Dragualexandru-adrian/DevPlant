@@ -23,3 +23,6 @@ backend/htmlcov/
 .runlogs/
 backend/*.sqlite.bak
 medicamente_autorizate_cu_prospecte.csv
+
+# local editor settings (MongoDB connection with password)
+.vscode/settings.json

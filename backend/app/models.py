@@ -37,6 +37,7 @@ class Event(BaseModel):
     medication_id: int
     event_type: str  # "accessed" | "dose_confirmed" | "missed_alert"
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    occurrence: Optional[str] = None  # missed_alert only: "<schedule_id>@YYYY-MM-DD HH:MM", dedupes across restarts
 
 
 class DrugCatalog(BaseModel):
