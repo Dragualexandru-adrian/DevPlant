@@ -1,316 +1,1040 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MedGuard Pitch</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-/* === THEME (edit colors here) === */
-:root {
-  --ink: #0c2a26;
-  --teal: #1d6b5f;
-  --teal-deep: #0e3f38;
-  --mint: #eaf6f0;
-  --mint-2: #d3ece1;
-  --coral: #e4572e;
-  --amber: #f2b134;
-  --muted: #4d6a64;
-  --stage-bg: #06201c;
-  --slide-bg: var(--mint);
-  --font-display: 'Fraunces', serif;
-  --font-body: 'Hanken Grotesk', sans-serif;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedGuard Pitch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Hanken+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* === THEME (edit colors here) === */
+    :root {
+      --ink: #0c2a26;
+      --teal: #1d6b5f;
+      --teal-deep: #0e3f38;
+      --mint: #eaf6f0;
+      --mint-2: #d3ece1;
+      --coral: #e4572e;
+      --amber: #f2b134;
+      --muted: #4d6a64;
+      --stage-bg: #06201c;
+      --slide-bg: var(--mint);
+      --font-display: 'Fraunces', serif;
+      --font-body: 'Hanken Grotesk', sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-/* === FIXED 16:9 STAGE (viewport-base.css) === */
-html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--stage-bg, #000); }
-.deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg, #000); }
-.deck-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: var(--slide-bg, #fff); }
-.slide { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: hidden; opacity: 0; pointer-events: none; background: var(--slide-bg, #fff); }
-.slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
-img, video, canvas, svg { max-width: 100%; max-height: 100%; }
-.deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
-@media print {
-  html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
-  .deck-viewport { position: static; overflow: visible; background: #fff; }
-  .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
-  .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
-  .slide:last-child { break-after: auto; page-break-after: auto; }
-  .deck-controls { display: none !important; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-/* === ANIMATION === */
-.reveal { opacity: 0; transform: translateY(36px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
-.slide.visible .reveal { opacity: 1; transform: none; }
-.d1 { transition-delay: .1s } .d2 { transition-delay: .25s } .d3 { transition-delay: .4s } .d4 { transition-delay: .55s } .d5 { transition-delay: .7s }
-.bar-fill { transform: scaleX(0); transform-origin: left; transition: transform 1.2s var(--ease) .5s; }
-.slide.visible .bar-fill { transform: scaleX(1); }
+    /* === FIXED 16:9 STAGE (viewport-base.css) === */
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--stage-bg, #000);
+    }
 
-/* === SHARED SLIDE PARTS === */
-body { font-family: var(--font-body); color: var(--ink); }
-.pad { position: absolute; inset: 0; padding: 80px 110px; }
-.kicker { font-size: 28px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--teal); }
-h1, h2, .stat-n { font-family: var(--font-display); font-weight: 900; letter-spacing: -.02em; line-height: 1.02; }
-h2 { font-size: 84px; margin-top: 18px; max-width: 1500px; }
-h2 em { font-style: italic; color: var(--coral); font-weight: 700; }
-.src { position: absolute; left: 110px; right: 110px; bottom: 40px; font-size: 22px; color: var(--muted); line-height: 1.35; }
-.pageno { position: absolute; right: 110px; top: 44px; font-size: 24px; font-weight: 700; color: var(--teal); opacity: .7; }
-.dark { background: var(--teal-deep); color: #fff; }
-.dark .kicker { color: var(--amber); }
-.dark .src, .dark .pageno { color: #a9d3c8; }
+    .deck-viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: var(--stage-bg, #000);
+    }
 
-/* phone-ish framed screenshot */
-.shot { display: block; border-radius: 28px; border: 6px solid var(--ink); box-shadow: 0 30px 60px rgba(8,40,34,.28); background: #fff; }
-.cap { margin-top: 16px; font-size: 28px; font-weight: 700; text-align: center; color: var(--ink); }
-.cap small { display: block; font-size: 23px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+    .deck-stage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      transform-origin: 0 0;
+      background: var(--slide-bg, #fff);
+    }
 
-/* === SLIDE 1: TITLE === */
-.s1 { background: radial-gradient(1200px 800px at 85% 20%, #1d6b5f 0%, transparent 60%), var(--teal-deep); color: #fff; }
-.s1 h1 { font-size: 150px; margin-top: 30px; white-space: nowrap; }
-.s1 h1 span { color: var(--amber); }
-.s1 .tag { font-family: var(--font-display); font-style: italic; font-size: 54px; font-weight: 500; margin-top: 30px; max-width: 820px; line-height: 1.2; color: #d6efe6; }
-.s1 .meta { position: absolute; left: 110px; bottom: 130px; max-width: 800px; font-size: 28px; color: #a9d3c8; line-height: 1.5; }
-.s1 .shot { position: absolute; right: 110px; top: 150px; height: 760px; transform: rotate(3deg); border-color: #fff; }
-.pill { display: inline-block; padding: 10px 24px; border-radius: 100px; border: 2px solid #5fb5a4; color: #bfe6da; font-size: 26px; font-weight: 700; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      display: block;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      background: var(--slide-bg, #fff);
+    }
 
-/* === SLIDE 2: PROBLEM === */
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; margin-top: 70px; }
-.stat { background: #fff; border-radius: 28px; padding: 44px 36px 40px; box-shadow: 0 14px 40px rgba(14,63,56,.10); }
-.stat-n { font-size: 120px; color: var(--teal); }
-.stat-n.hot { color: var(--coral); }
-.stat-n small { font-size: 56px; }
-.stat p { font-size: 32px; line-height: 1.3; margin-top: 18px; color: var(--ink); }
+    .slide.active,
+    .slide.visible {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 1;
+    }
 
-/* === SLIDE 3: BARS === */
-.s3-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 80px; margin-top: 56px; }
-.bars { display: flex; flex-direction: column; gap: 26px; }
-.row { display: grid; grid-template-columns: 290px 1fr; align-items: center; gap: 24px; font-size: 32px; font-weight: 500; }
-.track { height: 62px; background: var(--mint-2); border-radius: 14px; overflow: hidden; }
-.bar-fill { height: 100%; background: #86b9ae; border-radius: 14px; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; font-weight: 700; font-size: 32px; color: #fff; }
-.row.win .bar-fill { background: var(--coral); }
-.row.mg .bar-fill { background: var(--teal); }
-.aside { background: var(--teal-deep); color: #fff; border-radius: 32px; padding: 54px; align-self: start; }
-.aside .big { font-family: var(--font-display); font-size: 110px; font-weight: 900; line-height: 1; }
-.aside .big b { color: var(--amber); }
-.aside p { font-size: 32px; line-height: 1.35; margin-top: 20px; color: #d6efe6; }
-.aside hr { border: 0; height: 2px; background: #2f7569; margin: 34px 0; }
+    img,
+    video,
+    canvas,
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
 
-/* === SLIDE 4: HOW IT WORKS === */
-.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; margin-top: 40px; position: relative; }
-.step { background: #fff; border-radius: 28px; padding: 38px 32px; box-shadow: 0 14px 40px rgba(14,63,56,.10); position: relative; }
-.step .n { width: 58px; height: 58px; border-radius: 50%; background: var(--teal); color: #fff; font-weight: 700; font-size: 30px; display: flex; align-items: center; justify-content: center; }
-.step h3 { font-family: var(--font-display); font-size: 42px; margin-top: 22px; line-height: 1.1; min-height: 93px; }
-.step p { font-size: 28px; line-height: 1.35; color: var(--muted); margin-top: 14px; }
-.step .led { display: inline-block; width: 22px; height: 22px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-.honest { margin-top: 32px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 30px; background: var(--ink); color: #fff; border-radius: 28px; padding: 36px 50px; }
-.honest .st { font-size: 34px; line-height: 1.3; text-align: center; }
-.honest .st b { display: block; font-family: var(--font-display); font-size: 48px; margin-bottom: 6px; }
-.honest .neq { line-height: 1; font-family: var(--font-display); font-size: 100px; font-weight: 900; color: var(--amber); }
+    .deck-controls {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 1000;
+    }
 
-/* === SLIDE 5: LIVE APP === */
-.phones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px; margin-top: 34px; justify-items: center; }
-.phones .shot { height: 600px; }
-.phones figure { display: flex; flex-direction: column; align-items: center; }
+    @media print {
 
-/* === SLIDE 6: FURTHER DIRECTION === */
-.s6 { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; margin-top: 44px; align-items: start; }
-.col h3 { font-size: 34px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 20px; }
-.col.now h3 { color: var(--teal); }
-.col.next h3 { color: var(--coral); }
-.chips { display: flex; flex-wrap: wrap; gap: 14px; }
-.chip { font-size: 30px; padding: 14px 26px; border-radius: 100px; background: #fff; border: 3px solid var(--teal); font-weight: 500; }
-.col.next .chip { border: 3px dashed var(--coral); }
-.pair { display: flex; gap: 28px; margin-top: 34px; }
-.pair .shot { height: 520px; }
+      html,
+      body {
+        width: 1920px;
+        height: auto;
+        overflow: visible;
+        background: #fff;
+      }
 
-/* === SLIDE 7: CLOSE === */
-.s7 { background: radial-gradient(1000px 700px at 10% 100%, #1d6b5f 0%, transparent 60%), var(--teal-deep); color: #fff; }
-.s7 h2 { font-size: 100px; color: #fff; }
-.s7 h2 em { color: var(--amber); }
-.c3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; margin-top: 54px; }
-.box { background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.18); border-radius: 28px; padding: 38px; font-size: 30px; line-height: 1.4; color: #d6efe6; }
-.box b { display: block; font-family: var(--font-display); font-size: 40px; color: #fff; margin-bottom: 10px; }
-.box.alert { background: var(--coral); border-color: var(--coral); color: #fff; }
-.box.alert b { font-size: 76px; line-height: 1; }
+      .deck-viewport {
+        position: static;
+        overflow: visible;
+        background: #fff;
+      }
 
-/* === DECK CHROME (outside stage) === */
-.deck-controls { color: #a9d3c8; font: 500 16px var(--font-body); background: rgba(6,32,28,.7); padding: 6px 16px; border-radius: 100px; letter-spacing: .1em; }
-.progress { position: fixed; left: 0; top: 0; height: 4px; background: var(--amber); z-index: 1001; transition: width .4s var(--ease); }
-</style>
+      .deck-stage {
+        position: static;
+        width: auto;
+        height: auto;
+        transform: none !important;
+        background: none;
+      }
+
+      .slide {
+        position: relative;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        width: 1920px;
+        height: 1080px;
+        break-after: page;
+        page-break-after: always;
+      }
+
+      .slide:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+
+      .deck-controls {
+        display: none !important;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+      }
+    }
+
+    /* === ANIMATION === */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .8s var(--ease), transform .8s var(--ease);
+    }
+
+    .slide.visible .reveal {
+      opacity: 1;
+      transform: none;
+    }
+
+    .d1 {
+      transition-delay: .1s
+    }
+
+    .d2 {
+      transition-delay: .25s
+    }
+
+    .d3 {
+      transition-delay: .4s
+    }
+
+    .d4 {
+      transition-delay: .55s
+    }
+
+    .d5 {
+      transition-delay: .7s
+    }
+
+    .bar-fill {
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 1.2s var(--ease) .5s;
+    }
+
+    .slide.visible .bar-fill {
+      transform: scaleX(1);
+    }
+
+    /* === SHARED SLIDE PARTS === */
+    body {
+      font-family: var(--font-body);
+      color: var(--ink);
+    }
+
+    .pad {
+      position: absolute;
+      inset: 0;
+      padding: 80px 110px;
+    }
+
+    .kicker {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+
+    h1,
+    h2,
+    .stat-n {
+      font-family: var(--font-display);
+      font-weight: 900;
+      letter-spacing: -.02em;
+      line-height: 1.02;
+    }
+
+    h2 {
+      font-size: 84px;
+      margin-top: 18px;
+      max-width: 1500px;
+    }
+
+    h2 em {
+      font-style: italic;
+      color: var(--coral);
+      font-weight: 700;
+    }
+
+    .src {
+      position: absolute;
+      left: 110px;
+      right: 110px;
+      bottom: 40px;
+      font-size: 22px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .pageno {
+      position: absolute;
+      right: 110px;
+      top: 44px;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--teal);
+      opacity: .7;
+    }
+
+    .dark {
+      background: var(--teal-deep);
+      color: #fff;
+    }
+
+    .dark .kicker {
+      color: var(--amber);
+    }
+
+    .dark .src,
+    .dark .pageno {
+      color: #a9d3c8;
+    }
+
+    /* phone-ish framed screenshot */
+    .shot {
+      display: block;
+      border-radius: 28px;
+      border: 6px solid var(--ink);
+      box-shadow: 0 30px 60px rgba(8, 40, 34, .28);
+      background: #fff;
+    }
+
+    .cap {
+      margin-top: 16px;
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--ink);
+    }
+
+    .cap small {
+      display: block;
+      font-size: 23px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* === SLIDE 1: TITLE === */
+    .s1 {
+      background: radial-gradient(1200px 800px at 85% 20%, #1d6b5f 0%, transparent 60%), var(--teal-deep);
+      color: #fff;
+    }
+
+    .s1 h1 {
+      font-size: 150px;
+      margin-top: 30px;
+      white-space: nowrap;
+    }
+
+    .s1 h1 span {
+      color: var(--amber);
+    }
+
+    .s1 .tag {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 54px;
+      font-weight: 500;
+      margin-top: 30px;
+      max-width: 820px;
+      line-height: 1.2;
+      color: #d6efe6;
+    }
+
+    .s1 .meta {
+      position: absolute;
+      left: 110px;
+      bottom: 130px;
+      max-width: 800px;
+      font-size: 28px;
+      color: #a9d3c8;
+      line-height: 1.5;
+    }
+
+    .s1 .shot {
+      position: absolute;
+      right: 110px;
+      top: 150px;
+      height: 760px;
+      transform: rotate(3deg);
+      border-color: #fff;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 10px 24px;
+      border-radius: 100px;
+      border: 2px solid #5fb5a4;
+      color: #bfe6da;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    /* === SLIDE 2: PROBLEM === */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+      margin-top: 70px;
+    }
+
+    .stat {
+      background: #fff;
+      border-radius: 28px;
+      padding: 44px 36px 40px;
+      box-shadow: 0 14px 40px rgba(14, 63, 56, .10);
+    }
+
+    .stat-n {
+      font-size: 120px;
+      color: var(--teal);
+    }
+
+    .stat-n.hot {
+      color: var(--coral);
+    }
+
+    .stat-n small {
+      font-size: 56px;
+    }
+
+    .stat p {
+      font-size: 32px;
+      line-height: 1.3;
+      margin-top: 18px;
+      color: var(--ink);
+    }
+
+    /* === SLIDE 3: BARS === */
+    .s3-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 80px;
+      margin-top: 56px;
+    }
+
+    .bars {
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      align-items: center;
+      gap: 24px;
+      font-size: 32px;
+      font-weight: 500;
+    }
+
+    .track {
+      height: 62px;
+      background: var(--mint-2);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #86b9ae;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 20px;
+      font-weight: 700;
+      font-size: 32px;
+      color: #fff;
+    }
+
+    .row.win .bar-fill {
+      background: var(--coral);
+    }
+
+    .row.mg .bar-fill {
+      background: var(--teal);
+    }
+
+    .aside {
+      background: var(--teal-deep);
+      color: #fff;
+      border-radius: 32px;
+      padding: 54px;
+      align-self: start;
+    }
+
+    .aside .big {
+      font-family: var(--font-display);
+      font-size: 110px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .aside .big b {
+      color: var(--amber);
+    }
+
+    .aside p {
+      font-size: 32px;
+      line-height: 1.35;
+      margin-top: 20px;
+      color: #d6efe6;
+    }
+
+    .aside hr {
+      border: 0;
+      height: 2px;
+      background: #2f7569;
+      margin: 34px 0;
+    }
+
+    /* === SLIDE 4: HOW IT WORKS === */
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 26px;
+      margin-top: 40px;
+      position: relative;
+    }
+
+    .step {
+      background: #fff;
+      border-radius: 28px;
+      padding: 38px 32px;
+      box-shadow: 0 14px 40px rgba(14, 63, 56, .10);
+      position: relative;
+    }
+
+    .step .n {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: #fff;
+      font-weight: 700;
+      font-size: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step h3 {
+      font-family: var(--font-display);
+      font-size: 42px;
+      margin-top: 22px;
+      line-height: 1.1;
+      min-height: 93px;
+    }
+
+    .step p {
+      font-size: 28px;
+      line-height: 1.35;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+
+    .step .led {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .honest {
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 30px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 28px;
+      padding: 36px 50px;
+    }
+
+    .honest .st {
+      font-size: 34px;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .honest .st b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 48px;
+      margin-bottom: 6px;
+    }
+
+    .honest .neq {
+      line-height: 1;
+      font-family: var(--font-display);
+      font-size: 100px;
+      font-weight: 900;
+      color: var(--amber);
+    }
+
+    /* === SLIDE 5: LIVE APP === */
+    .phones {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 36px;
+      margin-top: 34px;
+      justify-items: center;
+    }
+
+    .phones .shot {
+      height: 600px;
+    }
+
+    .phones figure {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* === SLIDE 6: FURTHER DIRECTION === */
+    .s6 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 70px;
+      margin-top: 44px;
+      align-items: start;
+    }
+
+    .col h3 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .col.now h3 {
+      color: var(--teal);
+    }
+
+    .col.next h3 {
+      color: var(--coral);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .chip {
+      font-size: 30px;
+      padding: 14px 26px;
+      border-radius: 100px;
+      background: #fff;
+      border: 3px solid var(--teal);
+      font-weight: 500;
+    }
+
+    .col.next .chip {
+      border: 3px dashed var(--coral);
+    }
+
+    .pair {
+      display: flex;
+      gap: 28px;
+      margin-top: 34px;
+    }
+
+    .pair .shot {
+      height: 520px;
+    }
+
+    /* === SLIDE 7: CLOSE === */
+    .s7 {
+      background: radial-gradient(1000px 700px at 10% 100%, #1d6b5f 0%, transparent 60%), var(--teal-deep);
+      color: #fff;
+    }
+
+    .s7 h2 {
+      font-size: 100px;
+      color: #fff;
+    }
+
+    .s7 h2 em {
+      color: var(--amber);
+    }
+
+    .c3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 34px;
+      margin-top: 54px;
+    }
+
+    .box {
+      background: rgba(255, 255, 255, .08);
+      border: 2px solid rgba(255, 255, 255, .18);
+      border-radius: 28px;
+      padding: 38px;
+      font-size: 30px;
+      line-height: 1.4;
+      color: #d6efe6;
+    }
+
+    .box b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 40px;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .box.alert {
+      background: var(--coral);
+      border-color: var(--coral);
+      color: #fff;
+    }
+
+    .box.alert b {
+      font-size: 76px;
+      line-height: 1;
+    }
+
+    .s7 .pad {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .s7 .thanks-word {
+      font-size: 180px;
+    }
+
+    .s7 .team-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 44px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-top: 36px;
+    }
+
+    /* === SLIDE 4B: LIVE DETECTION === */
+    .s4b-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 70px;
+      margin-top: 50px;
+      align-items: center;
+    }
+
+    .s4b-grid .shot-frame {
+      width: 100%;
+      aspect-ratio: 1104 / 737;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(14,63,56,.18);
+    }
+
+    .s4b-grid .shot {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 43%;
+      display: block;
+    }
+
+    .detect-list {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .detect-item {
+      background: #fff;
+      border-radius: 24px;
+      padding: 28px 32px;
+      box-shadow: 0 14px 40px rgba(14, 63, 56, .10);
+      border-left: 10px solid var(--teal);
+    }
+
+    .detect-item b {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+
+    .detect-item p {
+      font-size: 25px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .detect-item.hot {
+      border-left-color: var(--coral);
+    }
+
+    /* === DECK CHROME (outside stage) === */
+    .deck-controls {
+      color: #a9d3c8;
+      font: 500 16px var(--font-body);
+      background: rgba(6, 32, 28, .7);
+      padding: 6px 16px;
+      border-radius: 100px;
+      letter-spacing: .1em;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 4px;
+      background: var(--amber);
+      z-index: 1001;
+      transition: width .4s var(--ease);
+    }
+  </style>
 </head>
+
 <body>
-<div class="progress" id="progress"></div>
-<div class="deck-viewport">
-<main class="deck-stage" id="deckStage">
+  <div class="progress" id="progress"></div>
+  <div class="deck-viewport">
+    <main class="deck-stage" id="deckStage">
 
-<!-- ===== 1. TITLE (≈15s) — "We built a pillbox buddy: it tells a family when a dose might be missed." ===== -->
-<section class="slide s1 active">
-  <div class="pad">
-    <div class="pill reveal">Life Science HackDay Timișoara</div>
-    <h1 class="reveal d1">Med<span>Guard</span></h1>
-    <p class="tag reveal d2">A medication companion that notices a missed dose, before a family has to ask.</p>
-    <div class="meta reveal d3">A phone app for patients and caregivers · in Romanian</div>
-  </div>
-  <img class="shot reveal d3" src="assets/dashboard.jpg" alt="MedGuard dashboard on a phone">
-</section>
-
-<!-- ===== 2. PROBLEM (≈25s) ===== -->
-<section class="slide">
-  <div class="pad">
-    <div class="kicker reveal">The problem</div>
-    <h2 class="reveal d1">Many pills, one person, <em>no one watching.</em></h2>
-    <div class="stats">
-      <div class="stat reveal d2"><div class="stat-n hot">~50<small>%</small></div><p>of elderly patients don’t fully follow chronic treatment</p></div>
-      <div class="stat reveal d2"><div class="stat-n">26–52<small>%</small></div><p>of Europeans 65+ take 5 or more medicines a day</p></div>
-      <div class="stat reveal d3"><div class="stat-n">1.35<small>M</small></div><p>older people in Romania live alone</p></div>
-      <div class="stat reveal d3"><div class="stat-n hot">72<small>→</small>51<small>%</small></div><p>adherence drops from 1 dose a day to 4 doses a day</p></div>
-    </div>
-  </div>
-  <div class="src">Sources: WHO adherence report · Bennie et al., Br J Clin Pharmacol 2024 / SHARE · Barometrul Îmbătrânirii Active (via Bursa.ro) · TMG adherence review</div>
-</section>
-
-<!-- ===== 3. WHY NOT CAMERAS (≈25s) ===== -->
-<section class="slide">
-  <div class="pad">
-    <div class="kicker reveal">Design grounded in the user</div>
-    <h2 class="reveal d1">People accept help. <em>Not being filmed.</em></h2>
-    <div class="s3-grid">
-      <div class="bars reveal d2">
-        <div class="row"><span>GPS tracking</span><div class="track"><div class="bar-fill" style="width:84%">84%</div></div></div>
-        <div class="row"><span>Fall bracelet</span><div class="track"><div class="bar-fill" style="width:81%">81%</div></div></div>
-        <div class="row mg"><span>Discreet sensor<br><small style="font-size:24px;color:#4d6a64">= our vial marker</small></span><div class="track"><div class="bar-fill" style="width:58%">58%</div></div></div>
-        <div class="row win"><span>Video camera</span><div class="track"><div class="bar-fill" style="width:37%">37%</div></div></div>
-      </div>
-      <div class="aside reveal d3">
-        <div class="big"><b>71%</b> vs 10%</div>
-        <p>of caregivers are interested in monitoring tech, but only 10% actually use a tool: it has to be easy.</p>
-        <hr>
-        <p>91% of Romanians 55+ already use a smartphone, so a phone app is the natural fit.</p>
-      </div>
-    </div>
-  </div>
-  <div class="src">Acceptance of monitoring technologies: PMC12948381 · AARP caregiver survey · Antena Satelor 2026 (RO 55+) · Pew Research 2024 (US 65+: 78%)</div>
-</section>
-
-<!-- ===== 4. HOW IT WORKS (≈30s) ===== -->
-<section class="slide">
-  <div class="pad">
-    <div class="kicker reveal">How it works</div>
-    <h2 class="reveal d1" style="font-size:66px;white-space:nowrap">Scan the box. <em>Mark the vial.</em> Alert the family.</h2>
-    <div class="flow">
-      <div class="step reveal d2"><div class="n">1</div><h3>Photograph the box</h3><p>On-phone OCR reads the name; matched to the ANM list of authorized medicines.</p></div>
-      <div class="step reveal d2"><div class="n">2</div><h3>Marker on the vial</h3><p>Raspberry Pi + OpenCV spot an ArUco tag when the vial is lifted.</p></div>
-      <div class="step reveal d3"><div class="n">3</div><h3>Instant feedback</h3><p><span class="led" style="background:#2fb36b"></span>green: on time<br><span class="led" style="background:var(--coral)"></span>red + buzzer: late</p></div>
-      <div class="step reveal d3"><div class="n">4</div><h3>Family is told</h3><p>A Telegram alert goes to a trusted contact if the window passes.</p></div>
-    </div>
-    <div class="honest reveal d4">
-      <div class="st"><b>Flacon accesat</b>The camera saw the vial opened.</div>
-      <div class="neq">≠</div>
-      <div class="st"><b>Administrare confirmată</b>The person tapped “taken”.</div>
-    </div>
-  </div>
-  <div class="src">We detect access, not swallowing. We never claim more than that.</div>
-</section>
-
-<!-- ===== 5. LIVE APP (≈30s, switch to live demo here) ===== -->
-<section class="slide">
-  <div class="pad">
-    <div class="kicker reveal">The working app</div>
-    <h2 class="reveal d1" style="font-size:72px">Real screens from our running build.</h2>
-    <div class="phones">
-      <figure class="reveal d2"><img class="shot" src="assets/dashboard.jpg" alt="Dashboard"><figcaption class="cap">Today at a glance<small>2 of 3 doses · call 112 notice</small></figcaption></figure>
-      <figure class="reveal d2"><img class="shot" src="assets/doses.jpg" alt="Today's doses"><figcaption class="cap">Two distinct states<small>accessed vs. confirmed</small></figcaption></figure>
-      <figure class="reveal d3"><img class="shot" src="assets/scan.jpg" alt="Scan a medicine box"><figcaption class="cap">Add by photo<small>OCR + ANM catalog</small></figcaption></figure>
-      <figure class="reveal d3"><img class="shot" src="assets/history.jpg" alt="History log"><figcaption class="cap">Interaction &amp; alert log<small>bring it to your doctor</small></figcaption></figure>
-    </div>
-  </div>
-  <div class="src">Screens captured from the running phone app (Romanian UI). Demo data only, no real patient data.</div>
-</section>
-
-<!-- ===== 6. FURTHER DIRECTION (≈25s) ===== -->
-<section class="slide">
-  <div class="pad">
-    <div class="kicker reveal">Further direction</div>
-    <h2 class="reveal d1" style="font-size:72px">Built for elderly users, <em>already in the app.</em></h2>
-    <div class="s6">
-      <div class="col now reveal d2">
-        <h3>In the app today</h3>
-        <div class="chips">
-          <span class="chip">Elderly welcome flow</span><span class="chip">Text mare (large text)</span><span class="chip">Mod daltonism</span><span class="chip">RO / EN</span><span class="chip">Safety banner · 112</span>
+      <!-- ===== 1. TITLE (≈15s) — "We built a pillbox buddy: it tells a family when a dose might be missed." ===== -->
+      <section class="slide s1 active">
+        <div class="pad">
+          <div class="pill reveal">Life Science HackDay Timișoara</div>
+          <h1 class="reveal d1">Med<span>Guard</span></h1>
+          <p class="tag reveal d2">A medication companion that notices a missed dose, before a family has to ask.</p>
+          <div class="meta reveal d3">A phone app for patients and caregivers · in Romanian</div>
         </div>
-        <div class="pair">
-          <img class="shot" src="assets/welcome.jpg" alt="Welcome flow">
-          <img class="shot" src="assets/largetext.jpg" alt="Large text mode">
+        <img class="shot reveal d3" src="assets/dashboard.jpg" alt="MedGuard dashboard on a phone">
+      </section>
+
+      <!-- ===== 2. PROBLEM (≈25s) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">The problem</div>
+          <h2 class="reveal d1">Many pills, one person, <em>no one watching.</em></h2>
+          <div class="stats">
+            <div class="stat reveal d2">
+              <div class="stat-n hot">~50<small>%</small></div>
+              <p>of elderly patients don’t fully follow chronic treatment</p>
+            </div>
+            <div class="stat reveal d2">
+              <div class="stat-n">26–52<small>%</small></div>
+              <p>of Europeans 65+ take 5 or more medicines a day</p>
+            </div>
+            <div class="stat reveal d3">
+              <div class="stat-n">1.35<small>M</small></div>
+              <p>older people in Romania live alone</p>
+            </div>
+            <div class="stat reveal d3">
+              <div class="stat-n hot">72<small>→</small>51<small>%</small></div>
+              <p>adherence drops from 1 dose a day to 4 doses a day</p>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col next reveal d3">
-        <h3>Next</h3>
-        <div class="chips">
-          <span class="chip">Interaction warnings (openFDA cross-check)</span><span class="chip">Printable “bring to your doctor” summary</span><span class="chip">Refill and stock reminders</span><span class="chip">Voice input</span><span class="chip">Sources shown for every claim</span><span class="chip">Caregiver dashboard</span>
+        <div class="src">Sources: WHO adherence report · Bennie et al., Br J Clin Pharmacol 2024 / SHARE · Barometrul
+          Îmbătrânirii Active (via Bursa.ro) · TMG adherence review</div>
+      </section>
+
+      <!-- ===== 3. WHY NOT CAMERAS (≈25s) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">Design grounded in the user</div>
+          <h2 class="reveal d1">People accept help. <em>Not being filmed.</em></h2>
+          <div class="s3-grid">
+            <div class="bars reveal d2">
+              <div class="row"><span>GPS tracking</span>
+                <div class="track">
+                  <div class="bar-fill" style="width:84%">84%</div>
+                </div>
+              </div>
+              <div class="row"><span>Fall bracelet</span>
+                <div class="track">
+                  <div class="bar-fill" style="width:81%">81%</div>
+                </div>
+              </div>
+              <div class="row mg"><span>Discreet sensor<br><small style="font-size:24px;color:#4d6a64">= our vial
+                    marker</small></span>
+                <div class="track">
+                  <div class="bar-fill" style="width:58%">58%</div>
+                </div>
+              </div>
+              <div class="row win"><span>Video camera</span>
+                <div class="track">
+                  <div class="bar-fill" style="width:37%">37%</div>
+                </div>
+              </div>
+            </div>
+            <div class="aside reveal d3">
+              <div class="big"><b>71%</b> vs 10%</div>
+              <p>of caregivers are interested in monitoring tech, but only 10% actually use a tool: it has to be easy.
+              </p>
+              <hr>
+              <p>91% of Romanians 55+ already use a smartphone, so a phone app is the natural fit.</p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+        <div class="src">Acceptance of monitoring technologies: PMC12948381 · AARP caregiver survey · Antena Satelor
+          2026 (RO 55+) · Pew Research 2024 (US 65+: 78%)</div>
+      </section>
+
+      <!-- ===== 4. HOW IT WORKS (≈30s) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">How it works</div>
+          <h2 class="reveal d1" style="font-size:66px;white-space:nowrap">Scan the box. <em>Mark the vial.</em> Alert
+            the family.</h2>
+          <div class="flow">
+            <div class="step reveal d2">
+              <div class="n">1</div>
+              <h3>Photograph the box</h3>
+              <p>On-phone OCR reads the name; matched to the ANM list of authorized medicines.</p>
+            </div>
+            <div class="step reveal d2">
+              <div class="n">2</div>
+              <h3>Marker on the vial</h3>
+              <p>Raspberry Pi + OpenCV spot an ArUco tag when the vial is lifted.</p>
+            </div>
+            <div class="step reveal d3">
+              <div class="n">3</div>
+              <h3>Instant feedback</h3>
+              <p><span class="led" style="background:#2fb36b"></span>green: on time<br><span class="led"
+                  style="background:var(--coral)"></span>red + buzzer: late</p>
+            </div>
+            <div class="step reveal d3">
+              <div class="n">4</div>
+              <h3>Family is told</h3>
+              <p>A Telegram alert goes to a trusted contact if the window passes.</p>
+            </div>
+          </div>
+          <div class="honest reveal d4">
+            <div class="st"><b>Flacon accesat</b>The camera saw the vial opened.</div>
+            <div class="neq">≠</div>
+            <div class="st"><b>Administrare confirmată</b>The person tapped “taken”.</div>
+          </div>
+        </div>
+        <div class="src">We detect access, not swallowing. We never claim more than that.</div>
+      </section>
+
+      <!-- ===== 4B. LIVE DETECTION (≈20s) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">Live detection</div>
+          <h2 class="reveal d1" style="font-size:72px">The camera finds the marker. <em>The app knows the box.</em></h2>
+          <div class="s4b-grid">
+            <div class="detect-list reveal d2">
+              <div class="detect-item"><b>3 markers, one frame</b>
+                <p>Every box on the desk is read at once — no manual check-in needed.</p>
+              </div>
+              <div class="detect-item hot"><b>Omega-3 (cod 9)</b>
+                <p>Dose window open at 19:20; put back after only 7s, under the 30s minimum, so it didn't register.</p>
+              </div>
+              <div class="detect-item"><b>Monopost &amp; Faringosept</b>
+                <p>No dose due yet today — next scheduled times shown directly on the overlay.</p>
+              </div>
+            </div>
+            <div class="shot-frame reveal d3">
+              <img class="shot" src="assets/detection.webp"
+                alt="Live app screen overlaying detected ArUco markers on three medicine boxes">
+            </div>
+          </div>
+        </div>
+        <div class="src">Live screen capture, ArUco markers overlaid in real time on the camera feed.</div>
+      </section>
+
+      <!-- ===== 5. LIVE APP (≈30s, switch to live demo here) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">The working app</div>
+          <h2 class="reveal d1" style="font-size:72px">Real screens from our running build.</h2>
+          <div class="phones">
+            <figure class="reveal d2"><img class="shot" src="assets/dashboard.jpg" alt="Dashboard">
+              <figcaption class="cap">Today at a glance<small>2 of 3 doses · call 112 notice</small></figcaption>
+            </figure>
+            <figure class="reveal d2"><img class="shot" src="assets/doses.jpg" alt="Today's doses">
+              <figcaption class="cap">Two distinct states<small>accessed vs. confirmed</small></figcaption>
+            </figure>
+            <figure class="reveal d3"><img class="shot" src="assets/scan.jpg" alt="Scan a medicine box">
+              <figcaption class="cap">Add by photo<small>OCR + ANM catalog</small></figcaption>
+            </figure>
+            <figure class="reveal d3"><img class="shot" src="assets/history.jpg" alt="History log">
+              <figcaption class="cap">Interaction &amp; alert log<small>bring it to your doctor</small></figcaption>
+            </figure>
+          </div>
+        </div>
+        <div class="src">Screens captured from the running phone app (Romanian UI). Demo data only, no real patient
+          data.</div>
+      </section>
+
+      <!-- ===== 6. FURTHER DIRECTION (≈25s) ===== -->
+      <section class="slide">
+        <div class="pad">
+          <div class="kicker reveal">Further direction</div>
+          <h2 class="reveal d1" style="font-size:72px">Built for elderly users, <em>already in the app.</em></h2>
+          <div class="s6">
+            <div class="col now reveal d2">
+              <h3>In the app today</h3>
+              <div class="chips">
+                <span class="chip">Elderly welcome flow</span><span class="chip">Text mare (large text)</span><span
+                  class="chip">Mod daltonism</span><span class="chip">RO / EN</span><span class="chip">Safety banner ·
+                  112</span>
+              </div>
+              <div class="pair">
+                <img class="shot" src="assets/welcome.jpg" alt="Welcome flow">
+                <img class="shot" src="assets/largetext.jpg" alt="Large text mode">
+              </div>
+            </div>
+            <div class="col next reveal d3">
+              <h3>Next</h3>
+              <div class="chips">
+                <span class="chip">Interaction warnings (openFDA cross-check)</span><span class="chip">Printable “bring
+                  to your doctor” summary</span><span class="chip">Refill and stock reminders</span><span
+                  class="chip">Voice input</span><span class="chip">Sources shown for every claim</span><span
+                  class="chip">Caregiver dashboard</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 7. CLOSE / THANK YOU (≈15s) ===== -->
+      <section class="slide s7">
+        <div class="pad">
+          <h2 class="reveal d1 thanks-word">Thank <em>you.</em></h2>
+          <div class="team-name reveal d2">Team Breaking_Bugs</div>
+        </div>
+        <div class="src">MedGuard · Challenge 3, Medication companion</div>
+      </section>
+
+    </main>
   </div>
-</section>
+  <div class="deck-controls" id="counter">1 / 7</div>
 
-<!-- ===== 7. CLOSE (≈15s) ===== -->
-<section class="slide s7">
-  <div class="pad">
-    <div class="kicker reveal">Thank you</div>
-    <h2 class="reveal d1">Decision support, <em>never diagnosis.</em></h2>
-    <div class="c3">
-      <div class="box alert reveal d2"><b>112</b>In an emergency, call 112. Always ask your doctor or pharmacist about your medicines.</div>
-      <div class="box reveal d3"><b>AI tools we used</b>Claude Code to build the app; AI summary of the official ANM leaflet; Tesseract OCR for box reading.</div>
-      <div class="box reveal d4"><b>Data</b>Public ANM medicine list and synthetic demo data only. No real patient data.</div>
-    </div>
-  </div>
-  <div class="src">MedGuard · Challenge 3, Medication companion</div>
-</section>
-
-</main>
-</div>
-<div class="deck-controls" id="counter">1 / 7</div>
-
-<script>
-/* === SLIDE CONTROLLER: arrows / space / PageUp-Down / swipe / wheel; scales the 1920x1080 stage === */
-class SlidePresentation {
-  constructor() {
-    this.slides = [...document.querySelectorAll('.slide')];
-    this.i = 0;
-    this.stage = document.getElementById('deckStage');
-    const scale = () => {
-      const f = Math.min(innerWidth / 1920, innerHeight / 1080);
-      this.stage.style.transform = `translate(${(innerWidth - 1920 * f) / 2}px, ${(innerHeight - 1080 * f) / 2}px) scale(${f})`;
-    };
-    scale(); addEventListener('resize', scale);
-    addEventListener('keydown', e => {
-      if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); this.go(this.i + 1); }
-      if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); this.go(this.i - 1); }
-      if (e.key === 'Home') this.go(0);
-      if (e.key === 'End') this.go(this.slides.length - 1);
-    });
-    let sx = 0;
-    addEventListener('touchstart', e => sx = e.touches[0].clientX, { passive: true });
-    addEventListener('touchend', e => { const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 50) this.go(this.i + (d < 0 ? 1 : -1)); });
-    let lock = false;
-    addEventListener('wheel', e => { if (lock || Math.abs(e.deltaY) < 30) return; lock = true; this.go(this.i + (e.deltaY > 0 ? 1 : -1)); setTimeout(() => lock = false, 700); }, { passive: true });
-    const h = parseInt(location.hash.slice(1)); this.go(h > 0 ? h - 1 : 0);
-  }
-  go(n) {
-    this.i = Math.max(0, Math.min(n, this.slides.length - 1));
-    this.slides.forEach((s, k) => { s.classList.toggle('active', k === this.i); s.classList.toggle('visible', k === this.i); });
-    document.getElementById('counter').textContent = `${this.i + 1} / ${this.slides.length}`;
-    document.getElementById('progress').style.width = ((this.i + 1) / this.slides.length * 100) + '%';
-  }
-}
-new SlidePresentation();
-</script>
+  <script>
+    /* === SLIDE CONTROLLER: arrows / space / PageUp-Down / swipe / wheel; scales the 1920x1080 stage === */
+    class SlidePresentation {
+      constructor() {
+        this.slides = [...document.querySelectorAll('.slide')];
+        this.i = 0;
+        this.stage = document.getElementById('deckStage');
+        const scale = () => {
+          const f = Math.min(innerWidth / 1920, innerHeight / 1080);
+          this.stage.style.transform = `translate(${(innerWidth - 1920 * f) / 2}px, ${(innerHeight - 1080 * f) / 2}px) scale(${f})`;
+        };
+        scale(); addEventListener('resize', scale);
+        addEventListener('keydown', e => {
+          if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); this.go(this.i + 1); }
+          if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); this.go(this.i - 1); }
+          if (e.key === 'Home') this.go(0);
+          if (e.key === 'End') this.go(this.slides.length - 1);
+        });
+        let sx = 0;
+        addEventListener('touchstart', e => sx = e.touches[0].clientX, { passive: true });
+        addEventListener('touchend', e => { const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 50) this.go(this.i + (d < 0 ? 1 : -1)); });
+        let lock = false;
+        addEventListener('wheel', e => { if (lock || Math.abs(e.deltaY) < 30) return; lock = true; this.go(this.i + (e.deltaY > 0 ? 1 : -1)); setTimeout(() => lock = false, 700); }, { passive: true });
+        const h = parseInt(location.hash.slice(1)); this.go(h > 0 ? h - 1 : 0);
+      }
+      go(n) {
+        this.i = Math.max(0, Math.min(n, this.slides.length - 1));
+        this.slides.forEach((s, k) => { s.classList.toggle('active', k === this.i); s.classList.toggle('visible', k === this.i); });
+        document.getElementById('counter').textContent = `${this.i + 1} / ${this.slides.length}`;
+        document.getElementById('progress').style.width = ((this.i + 1) / this.slides.length * 100) + '%';
+      }
+    }
+    new SlidePresentation();
+  </script>
 </body>
+
 </html>
