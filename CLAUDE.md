@@ -3,24 +3,26 @@
 Guidance for Claude Code (and other AI agents) working in this repo.
 
 ## Project
-MedGuard — smart medication monitoring app. See [PLAN.md](PLAN.md) for full plan.
+MedGuard — smart medication monitoring system. Full plan: [PLAN.md](PLAN.md).
 
-- Patient app: Expo (React Native)
-- OCR: ML Kit / Google Vision, for scanning med labels
-- Vision detection: camera-based container access detection (phone cam or ESP32-CAM)
-- Backend: Firebase (Firestore + Cloud Functions + Auth)
-- Push notifications: Expo Push, to notify caregiver of missed doses
-- Hardware (optional): ESP32 + LED + buzzer for local reminders
+- Frontend: React + Tesseract.js (web, mobile-accessible) — auth, OCR box scanning, dose/schedule form, dashboard
+- Backend: Python + FastAPI + SQLite — users, meds, schedules, history, Telegram notifications
+- Hardware: Raspberry Pi 4 + camera + OpenCV — ArUco marker detection on med vials, 2 LEDs, buzzer
+- Pi and backend communicate over Wi-Fi via HTTP API
 
-Current stage: hackathon/demo prototype. Hardware and vision pieces may be mocked until there's time to wire up the real thing — check PLAN.md's "Build order" for what's mocked vs real at any point.
+Stage: 3-hour hackathon build. MVP targets one demo account, two medications, one full working flow — not breadth.
 
 ## Conventions
-- Expo project lives at repo root (or `/app` once scaffolded — update this file when that's decided).
-- Keep OCR, scheduling, vision-detection, and push-alert logic in separate modules — they're built and tested independently per the plan's build order.
-- Firebase config/secrets go in `.env`, never committed (check `.gitignore`).
-- Mocked hardware (vision detection, buzzer/LED) should be behind a clear interface/flag so swapping in real camera/ESP32 code later doesn't touch calling code.
+- Keep frontend (React/OCR/dashboard), backend (FastAPI/SQLite/Telegram), and hardware (Pi/OpenCV/LEDs/buzzer) as separate, independently testable pieces — matches the 3-person team split in PLAN.md.
+- Vial access ("Vial accessed", detected by camera) and dose confirmation ("Administrare confirmată", logged by button) are distinct states — never conflate them. The system detects access, not swallowing.
+- Pi -> backend communication is a plain HTTP event push over Wi-Fi; keep that API small (med/marker id, event type, timestamp).
+- Secrets (Telegram bot token, etc.) go in `.env`, never committed.
+
+## Priorities (see PLAN.md for full fallback plan)
+- Must-have: web app, med registration, vial detection, history, one working alert path.
+- Nice-to-have: automatic OCR, full auth, Telegram notifications, advanced stock management.
+- Fallback: if the Pi can't keep up with camera processing, move OpenCV to the laptop and use the Pi only for LEDs/buzzer. If Telegram isn't ready, show the alert in-app instead.
 
 ## Workflow
-- No test suite yet — add one as soon as core med-CRUD and schedule logic exist.
-- Favor the plan's build order (CRUD → OCR → mock vision → real vision → caregiver push) over building everything at once; this is a demo, scope tightly.
-- Don't add backend/infra beyond Firebase unless the plan changes — keep hackathon scope.
+- No test suite — this is a timeboxed demo; favor the hour-by-hour build order in PLAN.md over polishing any one piece.
+- Don't add infra/features beyond PLAN.md without checking with the user first.

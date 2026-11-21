@@ -3,34 +3,36 @@
 Guidance for AI coding agents working in this repo.
 
 ## Project
-MedGuard — smart medication monitoring app. Full plan: [PLAN.md](PLAN.md).
+MedGuard — smart medication monitoring system. Full plan: [PLAN.md](PLAN.md).
 
 Stack:
-- Patient app: Expo (React Native)
-- OCR: ML Kit / Google Vision, for scanning med labels at registration
-- Vision detection: camera-based container-access detection (phone cam or ESP32-CAM)
-- Backend: Firebase (Firestore + Cloud Functions + Auth)
-- Push notifications: Expo Push, alerts caregiver on missed dose
-- Hardware (optional): ESP32 + LED + buzzer for local reminders
+- Frontend: React + Tesseract.js — auth, OCR box scanning, dose/schedule form, dashboard
+- Backend: Python + FastAPI + SQLite — users, meds, schedules, history, Telegram notifications
+- Hardware: Raspberry Pi 4 + camera + OpenCV — ArUco marker detection on med vials, 2 LEDs, buzzer
+- Pi <-> backend: HTTP API over Wi-Fi
 
-Stage: hackathon/demo prototype. Parts of the vision/hardware pipeline may be mocked — see PLAN.md's build order for current status.
+Stage: 3-hour hackathon build, MVP scope — one demo account, two medications, one complete working flow.
 
 ## Setup
-- Expo project: `npx expo start` once scaffolded (not yet done as of this writing).
-- Firebase: config in `.env`, never commit secrets.
+- Frontend: standard React app (not yet scaffolded as of this writing).
+- Backend: FastAPI + SQLite, run with `uvicorn`.
+- Hardware: Raspberry Pi 4, OpenCV, camera; ArUco marker generation/detection.
+- Secrets (Telegram bot token, etc.) in `.env`, never committed.
 
 ## Conventions
-- Keep these concerns in separate modules: OCR/med-registration, schedule engine, vision-access-detection, push-alert/caregiver dashboard.
-- Mock interfaces (vision detection, buzzer/LED) must be swappable for real hardware without touching callers.
-- No test suite yet — add tests once med-CRUD and schedule logic land.
+- Keep frontend, backend, and hardware/vision code as separate, independently testable pieces — matches the 3-person team split (Frontend+OCR / Hardware+CV / Backend+DB).
+- "Vial accessed" (camera-detected) and "Administrare confirmată" / dose confirmed (button-logged) are distinct states — never conflate. Detection confirms access, not swallowing.
+- Keep the Pi -> backend event API small: marker/med id, event type, timestamp.
 
-## Build order (do not skip ahead)
-1. App skeleton + med CRUD (manual entry) + schedule + local notification
-2. OCR scan → autofill med entry
-3. Mock vision detection (manual trigger simulates "container opened")
-4. Real camera-based vision detection
-5. Caregiver view + push alert on missed dose
-6. Demo polish
+## Build order (hour by hour — see PLAN.md for detail)
+1. **Hour 1 (parallel):** React app + OCR integration + form/dashboard skeleton; Pi/camera/LED/buzzer wiring + ArUco markers + OpenCV detection; FastAPI + SQLite + APIs + dose-time logic + Telegram prep.
+2. **Hour 2 (integration):** form -> backend save; med <-> marker linking; Pi -> FastAPI event push; dashboard updates; green/red LED + buzzer wiring; dose confirmation + stock update.
+3. **Hour 3 (test + demo):** OCR test + manual correction, vial detection test, simulated dose window, alert verification, history/confirmation/low-stock test, final 20 min for fixes + pitch.
+
+## Priorities / fallback
+- Must-have: web app, med registration, vial detection, history, one working alert.
+- Nice-to-have: automatic OCR, full auth, Telegram notifications, advanced stock handling.
+- Fallback: Pi too slow for camera -> move OpenCV to laptop, Pi handles only LEDs/buzzer. Telegram not ready -> show alert in-app.
 
 ## Scope discipline
-This is a hackathon demo. Don't add infra, abstractions, or features beyond PLAN.md without checking with the user first.
+Hackathon demo, timeboxed. Don't add infra, abstractions, or features beyond PLAN.md without checking with the user first.
