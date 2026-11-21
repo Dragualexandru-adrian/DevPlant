@@ -60,7 +60,7 @@ async def test_missed_dose_creates_alert_and_pushes(bg_engine, monkeypatch):
     monkeypatch.setattr(background, "send_expo_push", fake_push)
 
     with Session(bg_engine) as session:
-        caregiver = User(email="c@b.com", hashed_password="x", role="caregiver", expo_push_token="tok")
+        caregiver = User(name="Caregiver", email="c@b.com", hashed_password="x", role="caregiver", expo_push_token="tok")
         session.add(caregiver)
         session.commit()
         now, med, _schedule = _make_schedule(session, offset_minutes=-10)
@@ -143,7 +143,7 @@ async def test_missed_alert_deduped_across_checks(bg_engine, monkeypatch):
     monkeypatch.setattr(background, "send_expo_push", fake_push)
 
     with Session(bg_engine) as session:
-        caregiver = User(email="c@b.com", hashed_password="x", role="caregiver", expo_push_token="tok")
+        caregiver = User(name="Caregiver", email="c@b.com", hashed_password="x", role="caregiver", expo_push_token="tok")
         session.add(caregiver)
         session.commit()
         now, _med, _schedule = _make_schedule(session, offset_minutes=-10)

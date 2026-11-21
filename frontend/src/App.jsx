@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Dashboard from './views/Dashboard.jsx';
 import Scan from './views/Scan.jsx';
 import History from './views/History.jsx';
 import Auth from './views/Auth.jsx';
 import { Icon, btnPrimary } from './ui.jsx';
-import { user } from './data.js';
 import { useMedGuard } from './useMedGuard.js';
 import * as api from './api.js';
+
+function initials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('');
+}
 
 const NAV = [
   { id: 'panou', label: 'Panou principal', icon: 'dashboard', view: 'panou' },
@@ -24,7 +32,15 @@ export default function App() {
 function AuthedApp({ onLogout }) {
   const [view, setView] = useState('panou');
   const [active, setActive] = useState('panou');
+  const [user, setUser] = useState(null);
   const { meds, doses, events, loading, error, confirmDose, addMed } = useMedGuard();
+
+  useEffect(() => {
+    api.me().then(setUser).catch(() => {});
+  }, []);
+
+  const userFirst = user ? user.name.split(' ')[0] : '';
+  const userInitials = user ? initials(user.name) : '';
 
   const go = (item) => {
     setView(item.view);
@@ -75,16 +91,14 @@ function AuthedApp({ onLogout }) {
         <div className="hidden lg:flex flex-col gap-3 pt-6 border-t border-outline-variant/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-title text-title-md shrink-0">
-              {user.initials}
+              {userInitials}
             </div>
             <div className="min-w-0">
-              <p className="font-title text-title-md text-on-surface">{user.name}</p>
-              <p className="font-body text-body-sm text-on-surface-variant">Pacient • Cont activ</p>
+              <p className="font-title text-title-md text-on-surface">{user?.name}</p>
+              <p className="font-body text-body-sm text-on-surface-variant">
+                {user?.role === 'caregiver' ? 'Îngrijitor' : 'Pacient'} • Cont activ
+              </p>
             </div>
-          </div>
-          <div className="px-3 py-2.5 rounded-md bg-surface-container-low flex items-center gap-2">
-            <Icon n="notifications_active" size={18} className="text-primary shrink-0" />
-            <span className="font-body text-body-sm text-on-surface-variant">Notificări către: {user.caregiver}</span>
           </div>
           <button
             type="button"
@@ -101,7 +115,7 @@ function AuthedApp({ onLogout }) {
         <header className="bg-surface border-b border-outline-variant/25 px-6 lg:px-8 py-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-headline text-headline-md lg:text-headline-lg text-on-surface text-balance">
-              {view === 'panou' ? `Bună ziua, ${user.first}` : view === 'istoric' ? 'Istoric' : 'Adaugă un medicament'}
+              {view === 'panou' ? `Bună ziua, ${userFirst}` : view === 'istoric' ? 'Istoric' : 'Adaugă un medicament'}
             </h1>
             <p className="font-body text-body-md text-on-surface-variant mt-0.5 first-letter:uppercase">
               {view === 'panou'

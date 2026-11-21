@@ -1,20 +1,21 @@
 def test_register_creates_user(client):
-    resp = client.post("/auth/register", json={"email": "a@b.com", "password": "secret123"})
+    resp = client.post("/auth/register", json={"name": "A B", "email": "a@b.com", "password": "secret123"})
     assert resp.status_code == 200
     body = resp.json()
+    assert body["name"] == "A B"
     assert body["email"] == "a@b.com"
     assert body["role"] == "patient"
     assert "hashed_password" not in body
 
 
 def test_register_duplicate_email_rejected(client):
-    client.post("/auth/register", json={"email": "a@b.com", "password": "secret123"})
-    resp = client.post("/auth/register", json={"email": "a@b.com", "password": "other"})
+    client.post("/auth/register", json={"name": "A B", "email": "a@b.com", "password": "secret123"})
+    resp = client.post("/auth/register", json={"name": "A B", "email": "a@b.com", "password": "other"})
     assert resp.status_code == 400
 
 
 def test_login_success_returns_bearer_token(client):
-    client.post("/auth/register", json={"email": "a@b.com", "password": "secret123"})
+    client.post("/auth/register", json={"name": "A B", "email": "a@b.com", "password": "secret123"})
     resp = client.post("/auth/login", data={"username": "a@b.com", "password": "secret123"})
     assert resp.status_code == 200
     body = resp.json()
@@ -23,7 +24,7 @@ def test_login_success_returns_bearer_token(client):
 
 
 def test_login_wrong_password_rejected(client):
-    client.post("/auth/register", json={"email": "a@b.com", "password": "secret123"})
+    client.post("/auth/register", json={"name": "A B", "email": "a@b.com", "password": "secret123"})
     resp = client.post("/auth/login", data={"username": "a@b.com", "password": "wrong"})
     assert resp.status_code == 401
 
