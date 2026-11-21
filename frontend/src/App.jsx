@@ -8,7 +8,10 @@ import { useMedGuard } from './useMedGuard.js';
 import { useAccessibility } from './context/AccessibilityContext.jsx';
 import AccessibilityBar from './components/AccessibilityBar.jsx';
 import SafetyBanner from './components/SafetyBanner.jsx';
+import WelcomeFlow from './components/WelcomeFlow.jsx';
 import * as api from './api.js';
+
+const WELCOME_SEEN_KEY = 'medguard.welcomeSeen';
 
 function initials(name) {
   return name
@@ -27,10 +30,38 @@ function useNav(t) {
   ];
 }
 
+function hasSeenWelcome() {
+  try {
+    return localStorage.getItem(WELCOME_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
   const [authed, setAuthed] = useState(api.hasSession());
+  const [showWelcome, setShowWelcome] = useState(() => api.hasSession() && !hasSeenWelcome());
 
-  if (!authed) return <Auth onSuccess={() => setAuthed(true)} />;
+  const dismissWelcome = () => {
+    try {
+      localStorage.setItem(WELCOME_SEEN_KEY, '1');
+    } catch {
+      // storage unavailable — just stop showing it for this session
+    }
+    setShowWelcome(false);
+  };
+
+  if (!authed) {
+    return (
+      <Auth
+        onSuccess={() => {
+          setAuthed(true);
+          if (!hasSeenWelcome()) setShowWelcome(true);
+        }}
+      />
+    );
+  }
+  if (showWelcome) return <WelcomeFlow onDone={dismissWelcome} />;
   return <AuthedApp onLogout={() => { api.logout(); setAuthed(false); }} />;
 }
 
