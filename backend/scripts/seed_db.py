@@ -16,7 +16,7 @@ from app.db import get_db, init_db
 from app.models import Event, Medication, Schedule, User
 from app.security import hash_password
 
-TODAY = datetime.now(timezone.utc)
+TODAY = datetime.now().astimezone()  # local time: schedules ("08:00") are local
 YESTERDAY = TODAY - timedelta(days=1)
 
 

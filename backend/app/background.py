@@ -16,7 +16,10 @@ _WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 async def _check_once(db: Optional[Database] = None) -> None:
     db = store.get_db() if db is None else db
-    now = datetime.now(timezone.utc)
+    # Schedule times ("08:00") are what the user picked in local time, so occurrences are
+    # built in the server's local timezone. Event timestamps are UTC-aware; aware datetimes
+    # compare correctly across timezones (and pymongo converts them to UTC in queries).
+    now = datetime.now(timezone.utc).astimezone()
     today_abbr = _WEEKDAYS[now.weekday()]
 
     for schedule in store.find(db, Schedule):
@@ -41,7 +44,10 @@ async def _check_once(db: Optional[Database] = None) -> None:
             "event_type": {"$in": ["accessed", "dose_confirmed"]},
             "timestamp": {"$gte": occurrence, "$lte": window_end},
         })
-        if accessed:
+        # The in-memory set is lost on restart; the stored alert is not.
+        occurrence_id = f"{schedule.id}@{occurrence_key[1]}"
+        already_alerted = db[store.coll(Event)].find_one({"event_type": "missed_alert", "occurrence": occurrence_id})
+        if accessed or already_alerted:
             _alerted_occurrences.add(occurrence_key)
             continue
 
@@ -49,7 +55,7 @@ async def _check_once(db: Optional[Database] = None) -> None:
         if not med:
             continue
 
-        store.insert(db, Event(medication_id=med.id, event_type="missed_alert"))
+        store.insert(db, Event(medication_id=med.id, event_type="missed_alert", occurrence=occurrence_id))
         _alerted_occurrences.add(occurrence_key)
 
         caregivers = store.find(db, User, {"role": "caregiver", "expo_push_token": {"$ne": None}})
