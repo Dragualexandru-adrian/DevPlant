@@ -77,6 +77,17 @@ curl http://127.0.0.1:8000/health
 ```
 Should return `{"status":"ok"}`. Interactive API docs at `http://127.0.0.1:8000/docs`.
 
+## Tests
+Pytest suite (unit + integration) covering auth, meds, schedules, events, security, push, and the missed-dose background logic. In-memory SQLite per test, no real DB or background task touched.
+
+```powershell
+cd backend
+./venv/Scripts/Activate.ps1
+pip install -r requirements-dev.txt   # once
+pytest
+```
+Runs with coverage by default (`pytest.ini`); HTML report at `backend/htmlcov/index.html`. Run a single file/test with `pytest tests/test_meds.py` or `pytest tests/test_meds.py::test_create_medication`.
+
 ## Notes / known limitations (MVP scope)
 - SQLite DB file (`medguard.db`) is created on startup next to wherever uvicorn runs, gitignored.
 - CORS origins come from `CORS_ORIGINS` in `.env` (comma-separated), default `http://localhost:3000`.
