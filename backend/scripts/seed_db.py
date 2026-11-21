@@ -1,0 +1,155 @@
+"""Seed MedGuard's DB with 3 demo accounts, each exercising a different path.
+
+Run from the project root (matches .claude/launch.json's uvicorn --app-dir backend,
+which keeps the sqlite file next to the cwd):
+
+    python backend/scripts/seed_db.py
+"""
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from sqlmodel import Session, SQLModel, select
+
+from app.db import engine
+from app.models import Event, Medication, Schedule, User
+from app.security import hash_password
+
+TODAY = datetime.now(timezone.utc)
+YESTERDAY = TODAY - timedelta(days=1)
+
+
+def seed():
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        # Full reset: this is a hackathon demo DB, seeded to exactly 3 accounts.
+        for event in session.exec(select(Event)).all():
+            session.delete(event)
+        for schedule in session.exec(select(Schedule)).all():
+            session.delete(schedule)
+        for med in session.exec(select(Medication)).all():
+            session.delete(med)
+        for existing_user in session.exec(select(User)).all():
+            session.delete(existing_user)
+        session.commit()
+
+        # --- Account 1: golden-path demo (patient) -------------------------
+        # Full working flow: 2 meds, daily schedules, confirmed doses today + yesterday.
+        elena = User(
+            name="Elena Popescu",
+            email="demo@medguard.app",
+            hashed_password=hash_password("medguard-demo"),
+            role="patient",
+        )
+        session.add(elena)
+        session.commit()
+        session.refresh(elena)
+
+        metformin = Medication(
+            owner_id=elena.id,
+            name="Metformin",
+            concentration="500mg",
+            pills_per_dose=1,
+            stock=28,
+            marker_id="MED-DEMO-1",
+        )
+        lisinopril = Medication(
+            owner_id=elena.id,
+            name="Lisinopril",
+            concentration="10mg",
+            pills_per_dose=1,
+            stock=30,
+            marker_id="MED-DEMO-2",
+        )
+        session.add(metformin)
+        session.add(lisinopril)
+        session.commit()
+        session.refresh(metformin)
+        session.refresh(lisinopril)
+
+        session.add(Schedule(medication_id=metformin.id, time="08:00", days_of_week="mon,tue,wed,thu,fri,sat,sun"))
+        session.add(Schedule(medication_id=metformin.id, time="20:00", days_of_week="mon,tue,wed,thu,fri,sat,sun"))
+        session.add(Schedule(medication_id=lisinopril.id, time="08:00", days_of_week="mon,tue,wed,thu,fri,sat,sun"))
+
+        for med_id, hour in ((metformin.id, 8), (lisinopril.id, 8)):
+            for day in (YESTERDAY, TODAY):
+                ts = day.replace(hour=hour, minute=1, second=0, microsecond=0)
+                session.add(Event(medication_id=med_id, event_type="accessed", timestamp=ts))
+                session.add(Event(medication_id=med_id, event_type="dose_confirmed", timestamp=ts + timedelta(minutes=1)))
+
+        # --- Account 2: low stock + missed-dose alert path (patient) ------
+        # Push token set -> tests Telegram/push notification path.
+        # Today's 09:00 dose has no event at all -> background job should flag missed_alert.
+        ion = User(
+            name="Ion Vasilescu",
+            email="ion.vasilescu@medguard.app",
+            hashed_password=hash_password("medguard-test"),
+            role="patient",
+            expo_push_token="ExponentPushToken[seed-test-token-ion]",
+        )
+        session.add(ion)
+        session.commit()
+        session.refresh(ion)
+
+        insulina = Medication(
+            owner_id=ion.id,
+            name="Insulina",
+            concentration="100UI/ml",
+            pills_per_dose=1,
+            stock=2,  # low stock on purpose
+            marker_id="MED-DEMO-3",
+        )
+        session.add(insulina)
+        session.commit()
+        session.refresh(insulina)
+
+        session.add(Schedule(medication_id=insulina.id, time="09:00", days_of_week="mon,tue,wed,thu,fri,sat,sun", window_minutes=3))
+        # yesterday's dose was taken normally, so history isn't empty
+        y_ts = YESTERDAY.replace(hour=9, minute=2, second=0, microsecond=0)
+        session.add(Event(medication_id=insulina.id, event_type="accessed", timestamp=y_ts))
+        session.add(Event(medication_id=insulina.id, event_type="dose_confirmed", timestamp=y_ts + timedelta(minutes=1)))
+        # no event for today -> left for the background checker to raise missed_alert
+
+        # --- Account 3: caregiver role + accessed-without-confirmed state -
+        # No push token -> tests the in-app alert fallback (CLAUDE.md fallback plan).
+        # Vial was accessed but dose never confirmed: tests that "accessed" and
+        # "dose_confirmed" stay distinct states, never conflated.
+        maria = User(
+            name="Maria Ionescu",
+            email="maria.ionescu@medguard.app",
+            hashed_password=hash_password("medguard-test"),
+            role="caregiver",
+        )
+        session.add(maria)
+        session.commit()
+        session.refresh(maria)
+
+        vitamina_d = Medication(
+            owner_id=maria.id,
+            name="Vitamina D",
+            concentration="2000UI",
+            pills_per_dose=2,
+            stock=60,
+            marker_id="MED-DEMO-4",
+        )
+        session.add(vitamina_d)
+        session.commit()
+        session.refresh(vitamina_d)
+
+        session.add(Schedule(medication_id=vitamina_d.id, time="21:00", days_of_week="mon,wed,fri"))
+        t_ts = TODAY.replace(hour=21, minute=0, second=0, microsecond=0)
+        session.add(Event(medication_id=vitamina_d.id, event_type="accessed", timestamp=t_ts))
+        # deliberately no dose_confirmed event today
+
+        session.commit()
+
+    print("Seed complete: demo@medguard.app / medguard-demo")
+    print("               ion.vasilescu@medguard.app / medguard-test")
+    print("               maria.ionescu@medguard.app / medguard-test")
+
+
+if __name__ == "__main__":
+    seed()

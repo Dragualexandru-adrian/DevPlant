@@ -22,6 +22,8 @@ async def _check_once() -> None:
         for schedule in schedules:
             if today_abbr not in [d.strip() for d in schedule.days_of_week.split(",")]:
                 continue
+            if schedule.end_date and now.strftime("%Y-%m-%d") > schedule.end_date:
+                continue
 
             hour, minute = map(int, schedule.time.split(":"))
             occurrence = now.replace(hour=hour, minute=minute, second=0, microsecond=0)

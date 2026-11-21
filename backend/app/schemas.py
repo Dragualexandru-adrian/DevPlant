@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
+    name: str
     email: str
     password: str
     role: str = "patient"
@@ -11,6 +12,7 @@ class UserCreate(BaseModel):
 
 class UserRead(BaseModel):
     id: int
+    name: str
     email: str
     role: str
 
@@ -40,6 +42,7 @@ class ScheduleCreate(BaseModel):
     time: str
     days_of_week: str
     window_minutes: int = 3
+    end_date: Optional[str] = None
 
 
 class EventIn(BaseModel):

@@ -2,7 +2,7 @@ from app.schemas import MedicationCreate, ScheduleCreate, UserCreate
 
 
 def test_user_create_defaults_to_patient_role():
-    user = UserCreate(email="a@b.com", password="x")
+    user = UserCreate(name="A B", email="a@b.com", password="x")
     assert user.role == "patient"
 
 

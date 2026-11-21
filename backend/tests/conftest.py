@@ -37,8 +37,8 @@ def client_fixture(engine):
 
 @pytest.fixture
 def auth_headers(client):
-    def _create(email: str = "patient@example.com", password: str = "secret123", role: str = "patient"):
-        client.post("/auth/register", json={"email": email, "password": password, "role": role})
+    def _create(email: str = "patient@example.com", password: str = "secret123", role: str = "patient", name: str = "Test Patient"):
+        client.post("/auth/register", json={"name": name, "email": email, "password": password, "role": role})
         resp = client.post("/auth/login", data={"username": email, "password": password})
         token = resp.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
