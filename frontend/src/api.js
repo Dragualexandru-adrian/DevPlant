@@ -36,8 +36,8 @@ async function request(path, { method = 'GET', body, form, auth = true } = {}) {
   return res.json();
 }
 
-export function register(email, password) {
-  return request('/auth/register', { method: 'POST', body: { email, password }, auth: false });
+export function register(name, email, password) {
+  return request('/auth/register', { method: 'POST', body: { name, email, password }, auth: false });
 }
 
 export async function login(email, password) {
@@ -54,12 +54,14 @@ export function hasSession() {
   return Boolean(token);
 }
 
+export const me = () => request('/auth/me');
+
 export async function ensureDemoSession() {
   if (token) return;
   try {
     await login(DEMO_EMAIL, DEMO_PASSWORD);
   } catch {
-    await register(DEMO_EMAIL, DEMO_PASSWORD);
+    await register('Cont demo', DEMO_EMAIL, DEMO_PASSWORD);
     await login(DEMO_EMAIL, DEMO_PASSWORD);
   }
 }

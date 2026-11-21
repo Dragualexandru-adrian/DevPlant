@@ -6,6 +6,7 @@ const input = 'w-full px-3.5 py-2.5 rounded-md bg-surface-container-lowest borde
 
 export default function Auth({ onSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -17,7 +18,7 @@ export default function Auth({ onSuccess }) {
     setBusy(true);
     try {
       if (mode === 'signup') {
-        await api.register(email.trim(), password);
+        await api.register(name.trim(), email.trim(), password);
       }
       await api.login(email.trim(), password);
       onSuccess();
@@ -79,6 +80,19 @@ export default function Auth({ onSuccess }) {
           </div>
 
           <form onSubmit={submit} className="flex flex-col gap-4">
+            {mode === 'signup' && (
+              <label className="flex flex-col gap-1.5">
+                <span className="font-label text-label-lg text-on-surface">Nume</span>
+                <input
+                  className={input}
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </label>
+            )}
             <label className="flex flex-col gap-1.5">
               <span className="font-label text-label-lg text-on-surface">Email</span>
               <input

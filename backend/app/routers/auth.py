@@ -17,6 +17,7 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
+        name=payload.name,
         email=payload.email,
         hashed_password=hash_password(payload.password),
         role=payload.role,
@@ -24,6 +25,11 @@ def register(payload: UserCreate, session: Session = Depends(get_session)):
     session.add(user)
     session.commit()
     session.refresh(user)
+    return user
+
+
+@router.get("/me", response_model=UserRead)
+def me(user: User = Depends(get_current_user)):
     return user
 
 
