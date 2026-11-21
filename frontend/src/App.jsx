@@ -5,6 +5,9 @@ import History from './views/History.jsx';
 import Auth from './views/Auth.jsx';
 import { Icon, btnPrimary } from './ui.jsx';
 import { useMedGuard } from './useMedGuard.js';
+import { useAccessibility } from './context/AccessibilityContext.jsx';
+import AccessibilityBar from './components/AccessibilityBar.jsx';
+import SafetyBanner from './components/SafetyBanner.jsx';
 import * as api from './api.js';
 
 function initials(name) {
@@ -16,11 +19,13 @@ function initials(name) {
     .join('');
 }
 
-const NAV = [
-  { id: 'panou', label: 'Panou principal', short: 'Panou', icon: 'dashboard', view: 'panou' },
-  { id: 'scanare', label: 'Adaugă medicament', short: 'Adaugă', icon: 'document_scanner', view: 'scanare' },
-  { id: 'istoric', label: 'Istoric', short: 'Istoric', icon: 'history', view: 'istoric' },
-];
+function useNav(t) {
+  return [
+    { id: 'panou', label: t('navDashboard'), short: t('navDashboardShort'), icon: 'dashboard', view: 'panou' },
+    { id: 'scanare', label: t('navAdd'), short: t('navAddShort'), icon: 'document_scanner', view: 'scanare' },
+    { id: 'istoric', label: t('navHistory'), short: t('navHistoryShort'), icon: 'history', view: 'istoric' },
+  ];
+}
 
 export default function App() {
   const [authed, setAuthed] = useState(api.hasSession());
@@ -34,6 +39,8 @@ function AuthedApp({ onLogout }) {
   const [active, setActive] = useState('panou');
   const [user, setUser] = useState(null);
   const { meds, doses, events, loading, error, confirmDose, addMed, correctStock } = useMedGuard();
+  const { lang, t } = useAccessibility();
+  const NAV = useNav(t);
 
   useEffect(() => {
     api.me().then(setUser).catch(() => {});
@@ -53,7 +60,11 @@ function AuthedApp({ onLogout }) {
     go(NAV[0]);
   };
 
-  const today = new Date().toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(lang === 'en' ? 'en-GB' : 'ro-RO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -63,7 +74,7 @@ function AuthedApp({ onLogout }) {
           <div className="w-9 h-9 rounded-md bg-primary text-on-primary flex items-center justify-center shrink-0">
             <Icon n="medication" size={20} />
           </div>
-          <span className="font-headline text-title-lg text-on-surface leading-none">MedGuard</span>
+          <span className="font-headline text-title-lg text-on-surface leading-none">{t('appName')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div
@@ -75,12 +86,15 @@ function AuthedApp({ onLogout }) {
           <button
             type="button"
             onClick={onLogout}
-            aria-label="Deconectare"
+            aria-label={t('logout')}
             className="w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low active:bg-surface-container transition-colors duration-state-change"
           >
             <Icon n="logout" size={22} />
           </button>
         </div>
+      </div>
+      <div className="lg:hidden sticky top-[57px] z-20 bg-surface-container-lowest/95 backdrop-blur border-b border-outline-variant/30 px-4 py-2 overflow-x-auto">
+        <AccessibilityBar />
       </div>
 
       <aside className="hidden lg:flex w-[260px] shrink-0 bg-surface-container-lowest border-r border-outline-variant/30 flex-col justify-between p-6 gap-8 sticky top-0 h-screen">
@@ -90,10 +104,11 @@ function AuthedApp({ onLogout }) {
               <Icon n="medication" size={22} />
             </div>
             <div>
-              <span className="font-headline text-headline-sm text-on-surface block leading-none">MedGuard</span>
-              <span className="font-label text-label-sm text-on-surface-variant block mt-1">Monitorizare inteligentă</span>
+              <span className="font-headline text-headline-sm text-on-surface block leading-none">{t('appName')}</span>
+              <span className="font-label text-label-sm text-on-surface-variant block mt-1">{t('appTagline')}</span>
             </div>
           </div>
+          <AccessibilityBar />
           <nav aria-label="Navigare principală" className="flex flex-col gap-1.5">
             {NAV.map((item) => {
               const on = active === item.id;
@@ -122,7 +137,7 @@ function AuthedApp({ onLogout }) {
             <div className="min-w-0">
               <p className="font-title text-title-md text-on-surface">{user?.name}</p>
               <p className="font-body text-body-sm text-on-surface-variant">
-                {user?.role === 'caregiver' ? 'Îngrijitor' : 'Pacient'} • Cont activ
+                {user?.role === 'caregiver' ? t('caregiver') : t('patient')} • {t('activeAccount')}
               </p>
             </div>
           </div>
@@ -132,7 +147,7 @@ function AuthedApp({ onLogout }) {
             className="flex items-center gap-2 px-3 py-2.5 rounded-md font-label text-label-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors duration-state-change"
           >
             <Icon n="logout" size={18} />
-            Deconectare
+            {t('logout')}
           </button>
         </div>
       </aside>
@@ -141,31 +156,32 @@ function AuthedApp({ onLogout }) {
         <header className="bg-surface border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-headline text-headline-sm sm:text-headline-md lg:text-headline-lg text-on-surface text-balance">
-              {view === 'panou' ? `Bună ziua, ${userFirst}` : view === 'istoric' ? 'Istoric' : 'Adaugă un medicament'}
+              {view === 'panou' ? t('greeting', userFirst) : view === 'istoric' ? t('historyTitle') : t('addTitle')}
             </h1>
             <p className="font-body text-body-md text-on-surface-variant mt-0.5 first-letter:uppercase">
               {view === 'panou'
-                ? `${today} • Programul de tratament de azi`
+                ? `${today} • ${t('todaySubtitle')}`
                 : view === 'istoric'
-                  ? 'Interacțiuni și alerte înregistrate'
-                  : 'Fotografiază cutia și verifică datele citite'}
+                  ? t('historySubtitle')
+                  : t('addSubtitle')}
             </p>
           </div>
           <div className="hidden sm:flex flex-wrap items-center gap-3">
             {view === 'panou' && (
               <button type="button" className={btnPrimary} onClick={() => go(NAV[1])}>
                 <Icon n="document_scanner" size={22} />
-                Scanează cutie
+                {t('scanBox')}
               </button>
             )}
           </div>
         </header>
 
         <main className="flex-1 max-w-[1320px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8 flex flex-col gap-6 sm:gap-8">
+          {view === 'panou' && <SafetyBanner />}
           {error ? (
-            <p className="font-body text-body-md text-warning">Nu s-a putut contacta serverul MedGuard: {error}</p>
+            <p className="font-body text-body-md text-warning">{t('serverError')}: {error}</p>
           ) : loading ? (
-            <p className="font-body text-body-md text-on-surface-variant">Se încarcă datele…</p>
+            <p className="font-body text-body-md text-on-surface-variant">{t('loadingData')}</p>
           ) : view === 'panou' ? (
             <Dashboard meds={meds} doses={doses} events={events} onConfirm={confirmDose} onCorrectStock={correctStock} />
           ) : view === 'istoric' ? (
