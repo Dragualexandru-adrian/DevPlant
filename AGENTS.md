@@ -16,7 +16,7 @@ Stack:
 Stage: hackathon/demo prototype. Parts of the vision/hardware pipeline may be mocked — see PLAN.md's build order for current status.
 
 ## Setup
-- Expo project: `npx expo start` once scaffolded (not yet done as of this writing).
+- Expo project: run `cd app`, then `npx expo start`.
 - Firebase: config in `.env`, never commit secrets.
 
 ## Conventions

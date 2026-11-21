@@ -1,1 +1,10 @@
 .serena
+.venv/
+__pycache__/
+*.py[cod]
+node_modules/
+.expo/
+dist/
+.env
+.env.*
+!.env.example
