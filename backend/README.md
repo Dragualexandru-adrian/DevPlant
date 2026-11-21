@@ -49,15 +49,40 @@ backend/
 | POST | `/events` | none | Pi posts `{marker_id, event_type: "accessed"}` |
 | GET | `/events` | JWT | list own events (optional `?medication_id=`) |
 | POST | `/events/confirm` | JWT | `{medication_id}` - logs `dose_confirmed`, decrements stock |
+| GET | `/catalog/search?q=` | - | fuzzy search in the ANM drug list (trade name or DCI) |
+| GET | `/catalog/{id}` | - | one catalog entry (name, DCI, form, leaflet/RCP links) |
+| GET | `/catalog/{id}/guidance` | - | AI summary of the official leaflet (see below), cached per leaflet |
+| POST | `/ocr/scan` | - | multipart `image` (box photo) -> `{lines, matches}`; 503 if TensorFlow can't load |
+
+## Drug catalog, label OCR and AI leaflet summary
+Flow used by the mobile app (`app/`):
+1. **OCR** (`app/ocr.py`): the phone uploads a photo of the box; keras-ocr (TensorFlow: CRAFT detector + CRNN recogniser) reads the text lines. TensorFlow is imported on the first scan only, so the rest of the backend runs without it.
+2. **Catalog match** (`app/catalog.py`): lines are fuzzy-matched (rapidfuzz) against the ANM list of authorised medicines; the user confirms the right entry. Deterministic, no AI.
+3. **Leaflet** (`app/leaflet.py`): the entry's official ANM leaflet PDF is downloaded and sections *3. Cum să luați* and *4. Reacții adverse posibile* are extracted.
+4. **AI summary** (`app/guidance.py`): Groq (`GROQ_MODEL`, default `openai/gpt-oss-120b`) summarises only that text into: how to take it, usual dose, minimum hours between doses, max daily dose, main and serious side effects. Missing info comes back as `null`, never guessed. Cached in the `drugguidance` table.
+
+Load the catalog once (re-run to refresh; ~7.8k unique entries from ~33k CSV rows):
+```powershell
+python -m scripts.import_catalog "D:\medicamente_autorizate_cu_prospecte.csv"
+```
+Set `GROQ_API_KEY` in `.env`. Before a demo, open each demo medicine once so its summary is cached and the demo doesn't depend on anm.ro being up.
 
 Full interactive docs at `/docs` once running.
 
 ## Install
+Use **Python 3.11** if this machine will run the label OCR: TensorFlow 2.15 (needed by keras-ocr) has no wheels for newer Pythons.
 ```powershell
 cd backend
-python -m venv venv
+py -3.11 -m venv venv
 ./venv/Scripts/Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-ocr.txt   # everything + TensorFlow/keras-ocr
+# or: pip install -r requirements.txt  # no OCR (/ocr/scan answers 503)
+```
+First scan downloads the keras-ocr weights (~80 MB) to `~/.keras-ocr`.
+
+**Windows with Smart App Control on:** it blocks TensorFlow's DLL (and SQLAlchemy's compiled extensions). TensorFlow cannot run there, so run the OCR backend on a machine without it (Linux or another laptop). To run the rest of the backend on such a machine, install SQLAlchemy without compiled extensions:
+```powershell
+$env:DISABLE_SQLALCHEMY_CEXT='1'; pip install --force-reinstall --no-deps --no-binary sqlalchemy sqlalchemy
 ```
 Then copy env config:
 ```powershell
@@ -70,6 +95,10 @@ Fill in `JWT_SECRET` with a real secret before anything but local demo use.
 cd backend
 ./venv/Scripts/Activate.ps1
 uvicorn app.main:app --reload --port 8000
+```
+For the phone app, listen on the LAN and put this machine's IP in `app/.env` (`EXPO_PUBLIC_API_URL=http://<ip>:8000`):
+```powershell
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 Check it's up:
 ```powershell

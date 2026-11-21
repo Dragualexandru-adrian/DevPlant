@@ -37,3 +37,27 @@ class Event(SQLModel, table=True):
     medication_id: int = Field(foreign_key="medication.id")
     event_type: str  # "accessed" | "dose_confirmed" | "missed_alert"
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class DrugCatalog(SQLModel, table=True):
+    """One authorised medicine from the ANM list (CSV), deduplicated across pack sizes."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)  # "Denumire comerciala"
+    dci: Optional[str] = None  # active substance (INN)
+    form: Optional[str] = None  # "Forma farmaceutica"
+    atc_code: Optional[str] = None
+    concentration: Optional[str] = None
+    holder: Optional[str] = None  # "Firma detinatoare" (marketing authorisation holder)
+    leaflet_url: Optional[str] = Field(default=None, index=True)  # "Link prospect"
+    spc_url: Optional[str] = None  # "Link RCP"
+
+
+class DrugGuidance(SQLModel, table=True):
+    """Cached AI summary of a patient leaflet, keyed by leaflet URL (shared by many catalog rows)."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    leaflet_url: str = Field(unique=True, index=True)
+    summary_json: str
+    model: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

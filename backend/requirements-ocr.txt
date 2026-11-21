@@ -1,0 +1,5 @@
+# Label OCR (keras-ocr on TensorFlow). Needs Python 3.11: TF 2.15 has no newer wheels,
+# and keras-ocr 0.9.3 does not work with Keras 3 (TF >= 2.16).
+-r requirements.txt
+tensorflow==2.15.1
+keras-ocr==0.9.3

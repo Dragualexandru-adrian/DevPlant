@@ -16,3 +16,11 @@ MISSED_DOSE_CHECK_INTERVAL_SECONDS = int(os.getenv("MISSED_DOSE_CHECK_INTERVAL_S
 DEFAULT_WINDOW_MINUTES = int(os.getenv("DEFAULT_WINDOW_MINUTES", "3"))
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+# Longest side (px) a label photo is scaled down to before OCR. Phone photos are
+# 3-4k px; keras-ocr's detector upscales x2 internally, so big inputs eat RAM.
+OCR_MAX_SIDE = int(os.getenv("OCR_MAX_SIDE", "1024"))

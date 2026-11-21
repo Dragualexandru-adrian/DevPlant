@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.background import missed_dose_loop
 from app.config import CORS_ORIGINS
 from app.db import init_db
-from app.routers import auth, events, meds, schedules
+from app.routers import auth, catalog, events, meds, ocr, schedules
 
 app = FastAPI(title="MedGuard API")
 
@@ -22,6 +22,8 @@ app.include_router(auth.router)
 app.include_router(meds.router)
 app.include_router(schedules.router)
 app.include_router(events.router)
+app.include_router(catalog.router)
+app.include_router(ocr.router)
 
 
 @app.on_event("startup")
