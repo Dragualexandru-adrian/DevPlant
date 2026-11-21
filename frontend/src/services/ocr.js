@@ -2,6 +2,8 @@
 // (CRNN convertit cu tensorflowjs_converter) în public/models/ocr/ :
 //   model.json (+ fișierele .bin) și charset.txt (un caracter pe linie, indexul 0 = "blank" CTC)
 // Presupunere: intrare [1, 32, W, 1] (grayscale 0..1), ieșire [1, T, C]. Ajustează dacă modelul tău diferă.
+import { scanLabel, searchCatalog } from '../api.js';
+
 const MODEL_URL = '/models/ocr/model.json';
 const CHARSET_URL = '/models/ocr/charset.txt';
 
@@ -35,6 +37,25 @@ export async function recognizeText(img) {
   let prev = -1, text = '';
   for (const i of ids) { if (i !== prev && i !== 0) text += charset[i] ?? ''; prev = i; }
   return text;
+}
+
+// ---- Citirea etichetei: întâi serverul, apoi browserul ----
+// Serverul rulează keras-ocr (TensorFlow) și potrivește textul cu lista ANM
+// (backend/app/ocr.py). Dacă serverul nu are TensorFlow (503) sau nu răspunde,
+// încercăm modelul TF.js din browser de mai sus; fără model -> completare manuală.
+// Rezultat: { lines: string[], matches: [{ entry, score }], source: 'server' | 'browser' }
+export async function readLabel(file, img) {
+  try {
+    const { lines, matches } = await scanLabel(file);
+    return { lines, matches, source: 'server' };
+  } catch (err) {
+    // 4xx = poza în sine e problema (ex. nu e imagine); browserul n-ar face mai bine.
+    if (err.status && err.status < 500) throw err;
+  }
+  const text = (await recognizeText(img)).trim();
+  const name = parseMedication(text).name || text.split(/\s+/).find((w) => w.length > 3) || '';
+  const matches = name.length >= 2 ? await searchCatalog(name, 5).catch(() => []) : [];
+  return { lines: text ? [text] : [], matches, source: 'browser' };
 }
 
 // ---- Extragere nume + concentrație din text ----

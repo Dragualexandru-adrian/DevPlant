@@ -14,12 +14,14 @@ function setToken(value) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-async function request(path, { method = 'GET', body, form, auth = true } = {}) {
+async function request(path, { method = 'GET', body, form, multipart, auth = true } = {}) {
   const headers = {};
   if (auth && token) headers.Authorization = `Bearer ${token}`;
 
   let payload;
-  if (form) {
+  if (multipart) {
+    payload = multipart; // FormData: browserul pune singur Content-Type cu boundary
+  } else if (form) {
     payload = new URLSearchParams(form);
     headers['Content-Type'] = 'application/x-www-form-urlencoded';
   } else if (body !== undefined) {
@@ -30,7 +32,9 @@ async function request(path, { method = 'GET', body, form, auth = true } = {}) {
   const res = await fetch(`${API_URL}${path}`, { method, headers, body: payload });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
-    throw new Error(detail.detail || `${method} ${path} a eșuat (${res.status})`);
+    const err = new Error(detail.detail || `${method} ${path} a eșuat (${res.status})`);
+    err.status = res.status;
+    throw err;
   }
   if (res.status === 204) return null;
   return res.json();
@@ -78,6 +82,20 @@ export const listEvents = (medicationId) =>
   request(medicationId ? `/events?medication_id=${medicationId}` : '/events');
 export const confirmDose = (medicationId) =>
   request('/events/confirm', { method: 'POST', body: { medication_id: medicationId } });
+
+// Lista ANM de medicamente autorizate (backend/app/routers/catalog.py). Date publice, fără autentificare.
+export const searchCatalog = (q, limit = 8) =>
+  request(`/catalog/search?${new URLSearchParams({ q, limit: String(limit) })}`, { auth: false });
+
+// Rezumat AI din prospectul oficial: mod de utilizare, ore între doze, reacții adverse. Prima cerere durează câteva secunde.
+export const getGuidance = (catalogId) => request(`/catalog/${catalogId}/guidance`, { auth: false });
+
+// OCR pe server (keras-ocr / TensorFlow): poza cutiei -> { lines, matches }. 503 dacă serverul nu poate rula TensorFlow.
+export function scanLabel(file) {
+  const data = new FormData();
+  data.append('image', file);
+  return request('/ocr/scan', { method: 'POST', multipart: data, auth: false });
+}
 
 // Apelat de Raspberry Pi; expus și în UI ca buton de simulare fără hardware.
 export const reportVialAccess = (markerId) =>
