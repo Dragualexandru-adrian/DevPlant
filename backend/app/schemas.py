@@ -40,6 +40,7 @@ class ScheduleCreate(BaseModel):
     time: str
     days_of_week: str
     window_minutes: int = 3
+    end_date: Optional[str] = None
 
 
 class EventIn(BaseModel):

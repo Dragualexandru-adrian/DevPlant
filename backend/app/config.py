@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./medguard.db")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174").split(",")
 
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me-dev-secret")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")

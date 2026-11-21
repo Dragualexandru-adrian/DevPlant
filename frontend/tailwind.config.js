@@ -1,0 +1,45 @@
+/** Tokenii din designul MedGuard */
+export default {
+  content: ['./index.html', './src/**/*.{js,jsx}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#1D6A63', 'on-primary': '#E2FFFA',
+        'primary-container': '#A8F0E7', 'on-primary-container': '#045C56',
+        secondary: '#4A6460', 'secondary-container': '#CCE8E4', 'on-secondary-container': '#3D5653',
+        error: '#A83836', 'on-error': '#FFF7F6',
+        surface: '#F6FAF8',
+        'surface-container-lowest': '#FFFFFF', 'surface-container-low': '#EEF5F3',
+        'surface-container': '#E7F0ED', 'surface-container-high': '#E1EAE8', 'surface-container-highest': '#D9E5E2',
+        'on-surface': '#2A3433', 'on-surface-variant': '#56615F',
+        outline: '#727D7B', 'outline-variant': '#A9B4B2',
+        success: '#006D30', 'success-container': '#95F8A7', 'on-success-container': '#00210A',
+        warning: '#9B4500', 'warning-container': '#FFDBCA', 'on-warning-container': '#331200',
+      },
+      borderRadius: { sm: '6px', DEFAULT: '10px', md: '12px', lg: '16px', xl: '24px' },
+      fontFamily: {
+        headline: ['"Wix Madefor Display"', 'sans-serif'], display: ['"Wix Madefor Display"', 'sans-serif'],
+        body: ['"Instrument Sans"', 'sans-serif'], title: ['"Instrument Sans"', 'sans-serif'],
+        label: ['"Instrument Sans"', 'sans-serif'], mono: ['"Red Hat Mono"', 'monospace'],
+      },
+      fontSize: {
+        'display-lg': ['40px', { lineHeight: '48px', letterSpacing: '-0.5px', fontWeight: '700' }],
+        'display-lg-mobile': ['28px', { lineHeight: '34px', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.3px', fontWeight: '600' }],
+        'headline-md': ['24px', { lineHeight: '32px', letterSpacing: '-0.2px', fontWeight: '600' }],
+        'headline-sm': ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        'title-lg': ['18px', { lineHeight: '26px', fontWeight: '600' }],
+        'title-md': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        'body-md': ['14px', { lineHeight: '20px' }],
+        'body-sm': ['13px', { lineHeight: '18px', letterSpacing: '0.1px' }],
+        'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.1px', fontWeight: '600' }],
+        'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.2px', fontWeight: '600' }],
+        'label-sm': ['11px', { lineHeight: '16px', letterSpacing: '0.3px', fontWeight: '500' }],
+        'mono-md': ['14px', { lineHeight: '20px', fontWeight: '500' }],
+        'mono-sm': ['12px', { lineHeight: '16px', letterSpacing: '0.2px', fontWeight: '500' }],
+      },
+      transitionDuration: { 'state-change': '120ms' },
+    },
+  },
+  plugins: [],
+};
