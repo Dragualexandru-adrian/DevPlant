@@ -1,4 +1,5 @@
 import { Icon, Card } from '../ui.jsx';
+import SafetyBanner from '../components/SafetyBanner.jsx';
 
 const Row = ({ label, value, strong }) => (
   <div className="flex flex-col gap-0.5">
@@ -37,6 +38,7 @@ export default function GuidancePanel({ entry, state, onRetry }) {
 
   return (
     <Card className="p-6 flex flex-col gap-4" aria-live="polite">
+      <SafetyBanner />
       <div className="flex items-start gap-3">
         <Icon n="menu_book" size={24} className="text-primary shrink-0 mt-0.5" />
         <div className="min-w-0">
